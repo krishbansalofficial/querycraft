@@ -40,7 +40,10 @@ def _label(r):
     if not t:
         return f"{_size(c['model'])} {'few shot (3)' if c['prompt'].get('shots') else 'zero shot'}"
     rank = r["train"]["config"]["train"]["rank"] if r["train"] else t["rank"]
-    return f"{_size(c['model'])} {t['method'].upper()}" + ("" if t["method"] == "full" else f" r{rank}")
+    name = {"qlora": "QLoRA", "lora": "LoRA (bf16)", "dora": "DoRA (4 bit base)", "full": "full fine tune"}[t["method"]]
+    if t["method"] == "full":
+        return f"{_size(c['model'])} {name}"
+    return f"{_size(c['model'])} {name} " + ("at best sweep rank" if rank == "best" else f"r{rank}")
 
 
 def _hours(m):
