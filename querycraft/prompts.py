@@ -31,8 +31,8 @@ class PromptBuilder:
         tables = read_schema(ex["db_path"])
         if not pruned:
             return serialize(tables)
-        keep = prune(tables, ex["question"], ex.get("evidence", ""), self.n_tokens, self.budget)
-        return serialize(tables, keep)
+        keep, bare = prune(tables, ex["question"], ex.get("evidence", ""), self.n_tokens, self.budget)
+        return serialize(tables, keep, bare)
 
     def _shot_schema(self, ex):
         # few shot examples only show the tables their gold SQL touches, to keep prompts short

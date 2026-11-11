@@ -26,7 +26,7 @@ def build_dataset(cfg, tok):
     for ex in rows:
         prompt = pb.messages(ex)
         completion = [{"role": "assistant", "content": ex["sql"]}]
-        n = len(tok.apply_chat_template(prompt + completion, tokenize=True))
+        n = pb.n_tokens(tok.apply_chat_template(prompt + completion, tokenize=False))
         if n > t["max_len"]:  # never train on truncated targets
             dropped += 1
             continue
@@ -97,7 +97,7 @@ def main(cfg_path):
             bf16=True, gradient_checkpointing=True, gradient_checkpointing_kwargs={"use_reentrant": False},
             max_length=t["max_len"], completion_only_loss=True, packing=False,
             logging_steps=10, save_strategy="steps", save_steps=t["save_steps"], save_total_limit=None,
-            save_only_model=False, report_to="wandb" if use_wandb else "none", dataloader_num_workers=2,
+            save_only_model=False, include_num_input_tokens_seen=True, report_to="wandb" if use_wandb else "none", dataloader_num_workers=2,
         )
         trainer = SFTTrainer(model=model, args=args, train_dataset=ds, processing_class=tok, peft_config=peft_config)
         if peft_config is not None:

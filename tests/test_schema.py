@@ -34,7 +34,7 @@ def test_prune_fits_budget_and_keeps_relevant(tmp_path):
     tables = read_schema(str(p))
     budget = 120
     assert _cost(tables, None, n_tokens) > budget
-    keep = prune(tables, "Fastest lap ms for driver Hamilton?", "", n_tokens, budget)
-    assert _cost(tables, keep, n_tokens) <= budget
+    keep, bare = prune(tables, "Fastest lap ms for driver Hamilton?", "", n_tokens, budget)
+    assert _cost(tables, keep, n_tokens, bare) <= budget
     assert "driver" in keep and "lap" in keep
     assert "surname" in keep["driver"]
