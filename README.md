@@ -97,4 +97,19 @@ tests/        harness, split + leakage, schema
 
 ## What did not work
 
-<!-- filled from the runs -->
+* **First pruning design.** Dropping whole tables by lexical relevance while keeping every kept table in full detail
+  (types and example values) lost a gold table in 38.6% of validation prompts and 15.1% of dev prompts at a 1,280 token
+  budget. Showing low relevance tables in compact form (names and keys only) before dropping anything, plus a score
+  boost for tables one foreign key away from a relevant table, raised validation gold table recall to 96.2% at the same
+  budget. A 1,536 token budget only added 1.4 points on validation, so 1,280 stayed.
+* **Row level validation split.** Rejected before any run: validation rows from training databases would share schemas
+  with training, unlike BIRD dev, and would reward schema memorisation when picking checkpoints.
+* **Latest vLLM on the laptop.** vLLM 0.33 needs torch 2.14 built for CUDA 13, which driver 560 (CUDA 12.6) cannot
+  run. The stack is pinned to vLLM 0.32 and torch 2.13 cu129 builds, which run through CUDA minor version
+  compatibility. Two more fixes were needed: removing a CUDA 13 `torchcodec` build that crashed vLLM at import, and
+  installing `python3-dev`, because Triton compiles a C helper at runtime.
+* **Full fine tuning on 8 GB.** 1.5B parameters with fp32 master weights, fp32 gradients and AdamW states need about
+  24 GB before activations. Even bf16 weights with 8 bit AdamW need about 9 GB. Full fine tuning was moved to the A100;
+  its LoRA partner trains on the laptop with the identical recipe.
+* **BIRD archive layout.** The train archive ships macOS `__MACOSX` resource fork files that mirror every database
+  path. A naive path search picked them first, so validation pointed at non databases. The loader now skips them.

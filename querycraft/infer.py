@@ -1,8 +1,13 @@
 """vLLM inference (evaluation only). One engine per base model; LoRA checkpoints are served as adapters.
 DoRA adapters (unsupported by vLLM LoRA) and full fine tunes are merged/loaded as plain models."""
 import json
+import os
 import random
 from pathlib import Path
+
+# Greedy decoding needs no top-k/top-p kernel; FlashInfer's sampler would JIT compile one with nvcc,
+# which a driver only machine (WSL, slim pods) does not have.
+os.environ.setdefault("VLLM_USE_FLASHINFER_SAMPLER", "0")
 
 from .data import load_split
 from .prompts import PromptBuilder, extract_sql
