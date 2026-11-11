@@ -1,0 +1,10 @@
+inherit: ../train.yaml
+name: qwen7b_qlora_r64
+model: Qwen/Qwen2.5-Coder-7B-Instruct
+train:
+  method: qlora
+  rank: 64
+  per_device_batch: 4
+  grad_accum: 4
+eval:
+  gpu_memory_utilization: 0.90

@@ -1,0 +1,6 @@
+inherit: ../train.yaml
+name: qwen1.5b_qlora_r16
+model: Qwen/Qwen2.5-Coder-1.5B-Instruct
+train:
+  method: qlora
+  rank: 16

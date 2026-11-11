@@ -1,0 +1,13 @@
+# torch and vllm are installed by scripts/setup_env.sh (local) or the Dockerfile (rented)
+transformers>=5.16.1,<5.20.0
+peft>=0.21
+trl>=1.17
+bitsandbytes>=0.50
+accelerate>=1.11
+datasets
+wandb
+pyyaml
+sqlglot
+pandas
+matplotlib
+pytest

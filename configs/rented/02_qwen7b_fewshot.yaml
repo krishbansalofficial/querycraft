@@ -1,0 +1,8 @@
+inherit: ../base.yaml
+name: qwen7b_fewshot3
+model: Qwen/Qwen2.5-Coder-7B-Instruct
+prompt:
+  shots: 3
+eval:
+  gpu_memory_utilization: 0.90
+  forgetting: false

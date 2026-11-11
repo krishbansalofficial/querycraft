@@ -1,0 +1,12 @@
+# full fine tune does not fit 8 GB (fp32 master weights + AdamW = ~24 GB), so it runs on the A100
+inherit: ../train.yaml
+name: qwen1.5b_full
+model: Qwen/Qwen2.5-Coder-1.5B-Instruct
+train:
+  method: full
+  lr: 1.0e-5
+  optim: adamw_torch_fused
+  per_device_batch: 4
+  grad_accum: 4
+eval:
+  gpu_memory_utilization: 0.90

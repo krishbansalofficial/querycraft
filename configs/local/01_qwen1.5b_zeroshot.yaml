@@ -1,0 +1,3 @@
+inherit: ../base.yaml
+name: qwen1.5b_zeroshot
+model: Qwen/Qwen2.5-Coder-1.5B-Instruct

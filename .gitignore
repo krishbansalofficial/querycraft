@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+data/raw/
+data/processed/
+runs/
+runs_smoke/
+wandb/
+*.schema3.json

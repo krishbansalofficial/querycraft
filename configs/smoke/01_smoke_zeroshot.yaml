@@ -1,0 +1,8 @@
+inherit: ../base.yaml
+name: smoke_zeroshot
+model: Qwen/Qwen2.5-Coder-0.5B-Instruct
+eval:
+  limit: 20
+  gpu_memory_utilization: 0.6
+  max_model_len: 3072
+  enforce_eager: true

@@ -1,0 +1,7 @@
+# bf16 LoRA (no quantization): the like for like partner of the full fine tune
+inherit: ../train.yaml
+name: qwen1.5b_lora_r16
+model: Qwen/Qwen2.5-Coder-1.5B-Instruct
+train:
+  method: lora
+  rank: 16

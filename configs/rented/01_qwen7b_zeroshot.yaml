@@ -1,0 +1,5 @@
+inherit: ../base.yaml
+name: qwen7b_zeroshot
+model: Qwen/Qwen2.5-Coder-7B-Instruct
+eval:
+  gpu_memory_utilization: 0.90

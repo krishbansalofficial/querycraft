@@ -1,0 +1,7 @@
+inherit: ../base.yaml
+name: qwen1.5b_fewshot3
+model: Qwen/Qwen2.5-Coder-1.5B-Instruct
+prompt:
+  shots: 3
+eval:
+  forgetting: false

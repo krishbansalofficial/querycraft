@@ -1,0 +1,12 @@
+# Shared defaults. Every run config inherits this (directly or via train.yaml).
+seed: 0
+prompt:
+  schema_budget: 1280   # max schema tokens after pruning; prompt ~1.4k tokens worst case
+  shots: 0
+eval:
+  splits: [val, dev, heldback]
+  max_new_tokens: 256
+  max_model_len: 4096
+  gpu_memory_utilization: 0.85
+  forgetting: true
+  limit: null           # cap examples per split (smoke tests only)

@@ -1,0 +1,802 @@
+[
+ {
+  "id": "superhero_00",
+  "db_id": "superhero",
+  "question": "How many superheroes have blue eyes?",
+  "evidence": "",
+  "sql": "SELECT COUNT(*) FROM superhero s JOIN colour c ON s.eye_colour_id = c.id WHERE c.colour = 'Blue'",
+  "difficulty": "simple"
+ },
+ {
+  "id": "superhero_01",
+  "db_id": "superhero",
+  "question": "List the superhero names of all heroes published by Dark Horse Comics.",
+  "evidence": "",
+  "sql": "SELECT s.superhero_name FROM superhero s JOIN publisher p ON s.publisher_id = p.id WHERE p.publisher_name = 'Dark Horse Comics'",
+  "difficulty": "simple"
+ },
+ {
+  "id": "superhero_02",
+  "db_id": "superhero",
+  "question": "Which publisher has the largest number of superheroes?",
+  "evidence": "Ignore heroes whose publisher name is empty.",
+  "sql": "SELECT p.publisher_name FROM superhero s JOIN publisher p ON s.publisher_id = p.id WHERE p.publisher_name <> '' GROUP BY p.id ORDER BY COUNT(*) DESC LIMIT 1",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "superhero_03",
+  "db_id": "superhero",
+  "question": "What is the average height of female superheroes with a recorded height?",
+  "evidence": "female refers to gender = 'Female'; recorded height refers to height_cm > 0",
+  "sql": "SELECT AVG(s.height_cm) FROM superhero s JOIN gender g ON s.gender_id = g.id WHERE g.gender = 'Female' AND s.height_cm > 0",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "superhero_04",
+  "db_id": "superhero",
+  "question": "How many superheroes can fly?",
+  "evidence": "can fly refers to power_name = 'Flight'",
+  "sql": "SELECT COUNT(DISTINCT hp.hero_id) FROM hero_power hp JOIN superpower sp ON hp.power_id = sp.id WHERE sp.power_name = 'Flight'",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "superhero_05",
+  "db_id": "superhero",
+  "question": "What is the name of the heaviest superhero?",
+  "evidence": "heaviest refers to MAX(weight_kg)",
+  "sql": "SELECT superhero_name FROM superhero WHERE weight_kg = (SELECT MAX(weight_kg) FROM superhero)",
+  "difficulty": "simple"
+ },
+ {
+  "id": "superhero_06",
+  "db_id": "superhero",
+  "question": "How many superheroes have an Intelligence value of 100?",
+  "evidence": "",
+  "sql": "SELECT COUNT(*) FROM hero_attribute ha JOIN attribute a ON ha.attribute_id = a.id WHERE a.attribute_name = 'Intelligence' AND ha.attribute_value = 100",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "superhero_07",
+  "db_id": "superhero",
+  "question": "How many villains are published by Marvel Comics?",
+  "evidence": "villains refers to alignment = 'Bad'",
+  "sql": "SELECT COUNT(*) FROM superhero s JOIN alignment a ON s.alignment_id = a.id JOIN publisher p ON s.publisher_id = p.id WHERE a.alignment = 'Bad' AND p.publisher_name = 'Marvel Comics'",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "superhero_08",
+  "db_id": "superhero",
+  "question": "What percentage of DC Comics superheroes are female?",
+  "evidence": "percentage = COUNT(gender = 'Female') * 100 / COUNT(*) for publisher_name = 'DC Comics'",
+  "sql": "SELECT CAST(SUM(CASE WHEN g.gender = 'Female' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(*) FROM superhero s JOIN publisher p ON s.publisher_id = p.id JOIN gender g ON s.gender_id = g.id WHERE p.publisher_name = 'DC Comics'",
+  "difficulty": "challenging"
+ },
+ {
+  "id": "superhero_09",
+  "db_id": "superhero",
+  "question": "List all the powers of Wolverine.",
+  "evidence": "",
+  "sql": "SELECT sp.power_name FROM superhero s JOIN hero_power hp ON s.id = hp.hero_id JOIN superpower sp ON hp.power_id = sp.id WHERE s.superhero_name = 'Wolverine'",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "superhero_10",
+  "db_id": "superhero",
+  "question": "Which race has the most superheroes?",
+  "evidence": "Do not count the placeholder race '-'.",
+  "sql": "SELECT r.race FROM superhero s JOIN race r ON s.race_id = r.id WHERE r.race <> '-' GROUP BY r.id ORDER BY COUNT(*) DESC LIMIT 1",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "superhero_11",
+  "db_id": "superhero",
+  "question": "How many superheroes have the same eye and hair colour?",
+  "evidence": "Exclude heroes whose colour is 'No Colour'.",
+  "sql": "SELECT COUNT(*) FROM superhero s JOIN colour c ON s.eye_colour_id = c.id WHERE s.eye_colour_id = s.hair_colour_id AND c.colour <> 'No Colour'",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "superhero_12",
+  "db_id": "superhero",
+  "question": "How many superheroes have more than 30 powers?",
+  "evidence": "",
+  "sql": "SELECT COUNT(*) FROM (SELECT hero_id FROM hero_power GROUP BY hero_id HAVING COUNT(*) > 30)",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "superhero_13",
+  "db_id": "superhero",
+  "question": "Which superhero has the most powers?",
+  "evidence": "",
+  "sql": "SELECT s.superhero_name FROM superhero s JOIN hero_power hp ON s.id = hp.hero_id GROUP BY s.id ORDER BY COUNT(*) DESC LIMIT 1",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "superhero_14",
+  "db_id": "superhero",
+  "question": "What is the average weight of superheroes with green skin?",
+  "evidence": "green skin refers to skin colour = 'Green'",
+  "sql": "SELECT AVG(s.weight_kg) FROM superhero s JOIN colour c ON s.skin_colour_id = c.id WHERE c.colour = 'Green'",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "superhero_15",
+  "db_id": "superhero",
+  "question": "List the names of neutral superheroes published by Marvel Comics.",
+  "evidence": "neutral refers to alignment = 'Neutral'",
+  "sql": "SELECT s.superhero_name FROM superhero s JOIN alignment a ON s.alignment_id = a.id JOIN publisher p ON s.publisher_id = p.id WHERE a.alignment = 'Neutral' AND p.publisher_name = 'Marvel Comics'",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "superhero_16",
+  "db_id": "superhero",
+  "question": "How many powers does Superman have?",
+  "evidence": "",
+  "sql": "SELECT COUNT(*) FROM superhero s JOIN hero_power hp ON s.id = hp.hero_id WHERE s.superhero_name = 'Superman'",
+  "difficulty": "simple"
+ },
+ {
+  "id": "superhero_17",
+  "db_id": "superhero",
+  "question": "What colour are Batman's eyes?",
+  "evidence": "Batman refers to superhero_name = 'Batman'",
+  "sql": "SELECT c.colour FROM superhero s JOIN colour c ON s.eye_colour_id = c.id WHERE s.superhero_name = 'Batman'",
+  "difficulty": "simple"
+ },
+ {
+  "id": "superhero_18",
+  "db_id": "superhero",
+  "question": "Which attribute has the highest average value across all heroes?",
+  "evidence": "",
+  "sql": "SELECT a.attribute_name FROM hero_attribute ha JOIN attribute a ON ha.attribute_id = a.id GROUP BY a.id ORDER BY AVG(ha.attribute_value) DESC LIMIT 1",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "superhero_19",
+  "db_id": "superhero",
+  "question": "How many superheroes are taller than 200 cm?",
+  "evidence": "",
+  "sql": "SELECT COUNT(*) FROM superhero WHERE height_cm > 200",
+  "difficulty": "simple"
+ },
+ {
+  "id": "superhero_20",
+  "db_id": "superhero",
+  "question": "Which publisher's superheroes have the highest average Strength?",
+  "evidence": "Only consider publishers with at least 10 heroes that have a Strength value.",
+  "sql": "SELECT p.publisher_name FROM superhero s JOIN publisher p ON s.publisher_id = p.id JOIN hero_attribute ha ON s.id = ha.hero_id JOIN attribute a ON ha.attribute_id = a.id WHERE a.attribute_name = 'Strength' GROUP BY p.id HAVING COUNT(*) >= 10 ORDER BY AVG(ha.attribute_value) DESC LIMIT 1",
+  "difficulty": "challenging"
+ },
+ {
+  "id": "superhero_21",
+  "db_id": "superhero",
+  "question": "Name the superheroes that have both Telepathy and Telekinesis.",
+  "evidence": "",
+  "sql": "SELECT s.superhero_name FROM superhero s JOIN hero_power hp ON s.id = hp.hero_id JOIN superpower sp ON hp.power_id = sp.id WHERE sp.power_name = 'Telepathy' INTERSECT SELECT s.superhero_name FROM superhero s JOIN hero_power hp ON s.id = hp.hero_id JOIN superpower sp ON hp.power_id = sp.id WHERE sp.power_name = 'Telekinesis'",
+  "difficulty": "challenging"
+ },
+ {
+  "id": "superhero_22",
+  "db_id": "superhero",
+  "question": "What is the ratio of good superheroes to bad superheroes?",
+  "evidence": "ratio = COUNT(alignment = 'Good') / COUNT(alignment = 'Bad')",
+  "sql": "SELECT CAST(SUM(CASE WHEN a.alignment = 'Good' THEN 1 ELSE 0 END) AS REAL) / SUM(CASE WHEN a.alignment = 'Bad' THEN 1 ELSE 0 END) FROM superhero s JOIN alignment a ON s.alignment_id = a.id",
+  "difficulty": "challenging"
+ },
+ {
+  "id": "superhero_23",
+  "db_id": "superhero",
+  "question": "How many superheroes have no recorded powers?",
+  "evidence": "",
+  "sql": "SELECT COUNT(*) FROM superhero WHERE id NOT IN (SELECT hero_id FROM hero_power)",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "superhero_24",
+  "db_id": "superhero",
+  "question": "List the five tallest female superheroes, tallest first.",
+  "evidence": "female refers to gender = 'Female'",
+  "sql": "SELECT s.superhero_name FROM superhero s JOIN gender g ON s.gender_id = g.id WHERE g.gender = 'Female' ORDER BY s.height_cm DESC LIMIT 5",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "superhero_25",
+  "db_id": "superhero",
+  "question": "What is the most common hair colour among male superheroes?",
+  "evidence": "Do not count 'No Colour'.",
+  "sql": "SELECT c.colour FROM superhero s JOIN gender g ON s.gender_id = g.id JOIN colour c ON s.hair_colour_id = c.id WHERE g.gender = 'Male' AND c.colour <> 'No Colour' GROUP BY c.id ORDER BY COUNT(*) DESC LIMIT 1",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "superhero_26",
+  "db_id": "superhero",
+  "question": "How many superheroes have a Durability value below 20?",
+  "evidence": "",
+  "sql": "SELECT COUNT(*) FROM hero_attribute ha JOIN attribute a ON ha.attribute_id = a.id WHERE a.attribute_name = 'Durability' AND ha.attribute_value < 20",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "superhero_27",
+  "db_id": "superhero",
+  "question": "How many superheroes use their full name as their superhero name?",
+  "evidence": "",
+  "sql": "SELECT COUNT(*) FROM superhero WHERE full_name = superhero_name",
+  "difficulty": "simple"
+ },
+ {
+  "id": "superhero_28",
+  "db_id": "superhero",
+  "question": "How many more superheroes does Marvel Comics have than DC Comics?",
+  "evidence": "",
+  "sql": "SELECT SUM(CASE WHEN p.publisher_name = 'Marvel Comics' THEN 1 ELSE 0 END) - SUM(CASE WHEN p.publisher_name = 'DC Comics' THEN 1 ELSE 0 END) FROM superhero s JOIN publisher p ON s.publisher_id = p.id",
+  "difficulty": "challenging"
+ },
+ {
+  "id": "superhero_29",
+  "db_id": "superhero",
+  "question": "How many power assignments belong to mutant superheroes?",
+  "evidence": "mutant refers to race = 'Mutant'",
+  "sql": "SELECT COUNT(*) FROM hero_power hp JOIN superhero s ON hp.hero_id = s.id JOIN race r ON s.race_id = r.id WHERE r.race = 'Mutant'",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "superhero_30",
+  "db_id": "superhero",
+  "question": "Which gender has the highest average superhero weight?",
+  "evidence": "Only count heroes with weight_kg > 0.",
+  "sql": "SELECT g.gender FROM superhero s JOIN gender g ON s.gender_id = g.id WHERE s.weight_kg > 0 GROUP BY g.id ORDER BY AVG(s.weight_kg) DESC LIMIT 1",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "superhero_31",
+  "db_id": "superhero",
+  "question": "List the superheroes heavier than 500 kg together with their publisher.",
+  "evidence": "",
+  "sql": "SELECT s.superhero_name, p.publisher_name FROM superhero s JOIN publisher p ON s.publisher_id = p.id WHERE s.weight_kg > 500",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "superhero_32",
+  "db_id": "superhero",
+  "question": "Which superheroes have the maximum possible Speed value of 100? Give their superhero names.",
+  "evidence": "",
+  "sql": "SELECT s.superhero_name FROM superhero s JOIN hero_attribute ha ON s.id = ha.hero_id JOIN attribute a ON ha.attribute_id = a.id WHERE a.attribute_name = 'Speed' AND ha.attribute_value = 100",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "superhero_33",
+  "db_id": "superhero",
+  "question": "What share of superheroes published by Marvel Comics are good, as a percentage?",
+  "evidence": "good refers to alignment = 'Good'",
+  "sql": "SELECT CAST(SUM(CASE WHEN a.alignment = 'Good' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(*) FROM superhero s JOIN publisher p ON s.publisher_id = p.id JOIN alignment a ON s.alignment_id = a.id WHERE p.publisher_name = 'Marvel Comics'",
+  "difficulty": "challenging"
+ },
+ {
+  "id": "student_club_00",
+  "db_id": "student_club",
+  "question": "How many members wear a Large t-shirt?",
+  "evidence": "",
+  "sql": "SELECT COUNT(*) FROM member WHERE t_shirt_size = 'Large'",
+  "difficulty": "simple"
+ },
+ {
+  "id": "student_club_01",
+  "db_id": "student_club",
+  "question": "List the names of the events held in MU 215.",
+  "evidence": "",
+  "sql": "SELECT event_name FROM event WHERE location = 'MU 215'",
+  "difficulty": "simple"
+ },
+ {
+  "id": "student_club_02",
+  "db_id": "student_club",
+  "question": "How much money has been spent in total on the Food budget category?",
+  "evidence": "",
+  "sql": "SELECT SUM(spent) FROM budget WHERE category = 'Food'",
+  "difficulty": "simple"
+ },
+ {
+  "id": "student_club_03",
+  "db_id": "student_club",
+  "question": "How many events were games?",
+  "evidence": "games refers to type = 'Game'",
+  "sql": "SELECT COUNT(*) FROM event WHERE type = 'Game'",
+  "difficulty": "simple"
+ },
+ {
+  "id": "student_club_04",
+  "db_id": "student_club",
+  "question": "Which member attended the most events? Give the first and last name.",
+  "evidence": "",
+  "sql": "SELECT m.first_name, m.last_name FROM attendance a JOIN member m ON a.link_to_member = m.member_id GROUP BY m.member_id ORDER BY COUNT(*) DESC LIMIT 1",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "student_club_05",
+  "db_id": "student_club",
+  "question": "How much income has the club received from dues in total?",
+  "evidence": "dues refers to source = 'Dues'",
+  "sql": "SELECT SUM(amount) FROM income WHERE source = 'Dues'",
+  "difficulty": "simple"
+ },
+ {
+  "id": "student_club_06",
+  "db_id": "student_club",
+  "question": "What is the email address of the club president?",
+  "evidence": "president refers to position = 'President'",
+  "sql": "SELECT email FROM member WHERE position = 'President'",
+  "difficulty": "simple"
+ },
+ {
+  "id": "student_club_07",
+  "db_id": "student_club",
+  "question": "How many members live in Illinois?",
+  "evidence": "",
+  "sql": "SELECT COUNT(*) FROM member m JOIN zip_code z ON m.zip = z.zip_code WHERE z.state = 'Illinois'",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "student_club_08",
+  "db_id": "student_club",
+  "question": "Which event had the highest total expense cost?",
+  "evidence": "total expense cost = SUM(cost) of expenses linked to the event's budgets",
+  "sql": "SELECT e.event_name FROM expense x JOIN budget b ON x.link_to_budget = b.budget_id JOIN event e ON b.link_to_event = e.event_id GROUP BY e.event_id ORDER BY SUM(x.cost) DESC LIMIT 1",
+  "difficulty": "challenging"
+ },
+ {
+  "id": "student_club_09",
+  "db_id": "student_club",
+  "question": "What is the average cost of pizza expenses?",
+  "evidence": "pizza expenses refers to expense_description = 'Pizza'",
+  "sql": "SELECT AVG(cost) FROM expense WHERE expense_description = 'Pizza'",
+  "difficulty": "simple"
+ },
+ {
+  "id": "student_club_10",
+  "db_id": "student_club",
+  "question": "List the full names of members who paid expenses from an Advertisement budget.",
+  "evidence": "full name refers to first_name, last_name",
+  "sql": "SELECT DISTINCT m.first_name, m.last_name FROM expense x JOIN budget b ON x.link_to_budget = b.budget_id JOIN member m ON x.link_to_member = m.member_id WHERE b.category = 'Advertisement'",
+  "difficulty": "challenging"
+ },
+ {
+  "id": "student_club_11",
+  "db_id": "student_club",
+  "question": "Which budget category has the lowest total remaining amount?",
+  "evidence": "",
+  "sql": "SELECT category FROM budget GROUP BY category ORDER BY SUM(remaining) ASC LIMIT 1",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "student_club_12",
+  "db_id": "student_club",
+  "question": "How many events took place in 2019?",
+  "evidence": "2019 refers to SUBSTR(event_date, 1, 4) = '2019'",
+  "sql": "SELECT COUNT(*) FROM event WHERE SUBSTR(event_date, 1, 4) = '2019'",
+  "difficulty": "simple"
+ },
+ {
+  "id": "student_club_13",
+  "db_id": "student_club",
+  "question": "Which major has the most club members?",
+  "evidence": "",
+  "sql": "SELECT mj.major_name FROM member m JOIN major mj ON m.link_to_major = mj.major_id GROUP BY mj.major_id ORDER BY COUNT(*) DESC LIMIT 1",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "student_club_14",
+  "db_id": "student_club",
+  "question": "List the full names of members who have never attended an event.",
+  "evidence": "full name refers to first_name, last_name",
+  "sql": "SELECT first_name, last_name FROM member WHERE member_id NOT IN (SELECT link_to_member FROM attendance)",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "student_club_15",
+  "db_id": "student_club",
+  "question": "What is the total budgeted amount for the October Meeting?",
+  "evidence": "budgeted amount refers to SUM(amount) of the event's budgets",
+  "sql": "SELECT SUM(b.amount) FROM budget b JOIN event e ON b.link_to_event = e.event_id WHERE e.event_name = 'October Meeting'",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "student_club_16",
+  "db_id": "student_club",
+  "question": "How many expenses were made in September 2019?",
+  "evidence": "September 2019 refers to expense_date LIKE '2019-09%'",
+  "sql": "SELECT COUNT(*) FROM expense WHERE expense_date LIKE '2019-09%'",
+  "difficulty": "simple"
+ },
+ {
+  "id": "student_club_17",
+  "db_id": "student_club",
+  "question": "What percentage of events are closed?",
+  "evidence": "closed refers to status = 'Closed'",
+  "sql": "SELECT CAST(SUM(CASE WHEN status = 'Closed' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(*) FROM event",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "student_club_18",
+  "db_id": "student_club",
+  "question": "Who made the single most expensive expense? Give the first and last name.",
+  "evidence": "",
+  "sql": "SELECT m.first_name, m.last_name FROM expense x JOIN member m ON x.link_to_member = m.member_id ORDER BY x.cost DESC LIMIT 1",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "student_club_19",
+  "db_id": "student_club",
+  "question": "In which city does the club's Vice President live?",
+  "evidence": "Vice President refers to position = 'Vice President'",
+  "sql": "SELECT z.city FROM member m JOIN zip_code z ON m.zip = z.zip_code WHERE m.position = 'Vice President'",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "student_club_20",
+  "db_id": "student_club",
+  "question": "How many budgets have been overspent?",
+  "evidence": "overspent refers to remaining < 0",
+  "sql": "SELECT COUNT(*) FROM budget WHERE remaining < 0",
+  "difficulty": "simple"
+ },
+ {
+  "id": "student_club_21",
+  "db_id": "student_club",
+  "question": "How many members are there for each t-shirt size?",
+  "evidence": "",
+  "sql": "SELECT t_shirt_size, COUNT(*) FROM member GROUP BY t_shirt_size",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "student_club_22",
+  "db_id": "student_club",
+  "question": "Which events had a budget for speaker gifts?",
+  "evidence": "speaker gifts refers to category = 'Speaker Gifts'",
+  "sql": "SELECT DISTINCT e.event_name FROM budget b JOIN event e ON b.link_to_event = e.event_id WHERE b.category = 'Speaker Gifts'",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "student_club_23",
+  "db_id": "student_club",
+  "question": "How much income did the club receive in October 2019?",
+  "evidence": "October 2019 refers to date_received LIKE '2019-10%'",
+  "sql": "SELECT SUM(amount) FROM income WHERE date_received LIKE '2019-10%'",
+  "difficulty": "simple"
+ },
+ {
+  "id": "student_club_24",
+  "db_id": "student_club",
+  "question": "Which event had the most attendees?",
+  "evidence": "",
+  "sql": "SELECT e.event_name FROM attendance a JOIN event e ON a.link_to_event = e.event_id GROUP BY e.event_id ORDER BY COUNT(*) DESC LIMIT 1",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "student_club_25",
+  "db_id": "student_club",
+  "question": "On average, how many members attended each event that had at least one attendee?",
+  "evidence": "",
+  "sql": "SELECT CAST(COUNT(*) AS REAL) / COUNT(DISTINCT link_to_event) FROM attendance",
+  "difficulty": "challenging"
+ },
+ {
+  "id": "student_club_26",
+  "db_id": "student_club",
+  "question": "What are the phone numbers of the members who paid dues in October 2019?",
+  "evidence": "dues refers to source = 'Dues'; October 2019 refers to date_received LIKE '2019-10%'",
+  "sql": "SELECT DISTINCT m.phone FROM income i JOIN member m ON i.link_to_member = m.member_id WHERE i.source = 'Dues' AND i.date_received LIKE '2019-10%'",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "student_club_27",
+  "db_id": "student_club",
+  "question": "Which department is Grant Gilmour's major in?",
+  "evidence": "",
+  "sql": "SELECT mj.department FROM member m JOIN major mj ON m.link_to_major = mj.major_id WHERE m.first_name = 'Grant' AND m.last_name = 'Gilmour'",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "student_club_28",
+  "db_id": "student_club",
+  "question": "How many open meetings are there?",
+  "evidence": "open meetings refers to type = 'Meeting' AND status = 'Open'",
+  "sql": "SELECT COUNT(*) FROM event WHERE type = 'Meeting' AND status = 'Open'",
+  "difficulty": "simple"
+ },
+ {
+  "id": "student_club_29",
+  "db_id": "student_club",
+  "question": "What is the total cost of expenses paid by members of the College of Humanities and Social Sciences?",
+  "evidence": "",
+  "sql": "SELECT SUM(x.cost) FROM expense x JOIN member m ON x.link_to_member = m.member_id JOIN major mj ON m.link_to_major = mj.major_id WHERE mj.college = 'College of Humanities and Social Sciences'",
+  "difficulty": "challenging"
+ },
+ {
+  "id": "student_club_30",
+  "db_id": "student_club",
+  "question": "How many members live in a state other than the one most members live in?",
+  "evidence": "",
+  "sql": "SELECT COUNT(*) FROM member m JOIN zip_code z ON m.zip = z.zip_code WHERE z.state <> (SELECT z2.state FROM member m2 JOIN zip_code z2 ON m2.zip = z2.zip_code GROUP BY z2.state ORDER BY COUNT(*) DESC LIMIT 1)",
+  "difficulty": "challenging"
+ },
+ {
+  "id": "student_club_31",
+  "db_id": "student_club",
+  "question": "List each budget category with the total amount spent on it, largest first.",
+  "evidence": "",
+  "sql": "SELECT category, SUM(spent) FROM budget GROUP BY category ORDER BY SUM(spent) DESC",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "student_club_32",
+  "db_id": "student_club",
+  "question": "Which events in 2020 were elections?",
+  "evidence": "2020 refers to SUBSTR(event_date, 1, 4) = '2020'; elections refers to type = 'Election'",
+  "sql": "SELECT event_name FROM event WHERE type = 'Election' AND SUBSTR(event_date, 1, 4) = '2020'",
+  "difficulty": "simple"
+ },
+ {
+  "id": "formula_1_00",
+  "db_id": "formula_1",
+  "question": "How many races were held in 2010?",
+  "evidence": "",
+  "sql": "SELECT COUNT(*) FROM races WHERE year = 2010",
+  "difficulty": "simple"
+ },
+ {
+  "id": "formula_1_01",
+  "db_id": "formula_1",
+  "question": "Which country has the most circuits?",
+  "evidence": "",
+  "sql": "SELECT country FROM circuits GROUP BY country ORDER BY COUNT(*) DESC LIMIT 1",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "formula_1_02",
+  "db_id": "formula_1",
+  "question": "What is Fernando Alonso's nationality?",
+  "evidence": "",
+  "sql": "SELECT nationality FROM drivers WHERE forename = 'Fernando' AND surname = 'Alonso'",
+  "difficulty": "simple"
+ },
+ {
+  "id": "formula_1_03",
+  "db_id": "formula_1",
+  "question": "How many drivers were born after 1990?",
+  "evidence": "born after 1990 refers to STRFTIME('%Y', dob) > '1990'",
+  "sql": "SELECT COUNT(*) FROM drivers WHERE STRFTIME('%Y', dob) > '1990'",
+  "difficulty": "simple"
+ },
+ {
+  "id": "formula_1_04",
+  "db_id": "formula_1",
+  "question": "At which circuit was the 2015 Monaco Grand Prix held?",
+  "evidence": "",
+  "sql": "SELECT c.name FROM races r JOIN circuits c ON r.circuitId = c.circuitId WHERE r.year = 2015 AND r.name = 'Monaco Grand Prix'",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "formula_1_05",
+  "db_id": "formula_1",
+  "question": "Which driver has won the most races? Give the forename and surname.",
+  "evidence": "won refers to position = 1 in results",
+  "sql": "SELECT d.forename, d.surname FROM results r JOIN drivers d ON r.driverId = d.driverId WHERE r.position = 1 GROUP BY d.driverId ORDER BY COUNT(*) DESC LIMIT 1",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "formula_1_06",
+  "db_id": "formula_1",
+  "question": "How many races has Lewis Hamilton won?",
+  "evidence": "won refers to position = 1",
+  "sql": "SELECT COUNT(*) FROM results r JOIN drivers d ON r.driverId = d.driverId WHERE d.forename = 'Lewis' AND d.surname = 'Hamilton' AND r.position = 1",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "formula_1_07",
+  "db_id": "formula_1",
+  "question": "Which constructor scored the most points in the 2012 season?",
+  "evidence": "points come from constructorResults",
+  "sql": "SELECT c.name FROM constructorResults cr JOIN races r ON cr.raceId = r.raceId JOIN constructors c ON cr.constructorId = c.constructorId WHERE r.year = 2012 GROUP BY c.constructorId ORDER BY SUM(cr.points) DESC LIMIT 1",
+  "difficulty": "challenging"
+ },
+ {
+  "id": "formula_1_08",
+  "db_id": "formula_1",
+  "question": "Who set the fastest lap of the 2009 Australian Grand Prix?",
+  "evidence": "fastest lap refers to rank = 1 in results",
+  "sql": "SELECT d.forename, d.surname FROM results res JOIN races r ON res.raceId = r.raceId JOIN drivers d ON res.driverId = d.driverId WHERE r.year = 2009 AND r.name = 'Australian Grand Prix' AND res.rank = 1",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "formula_1_09",
+  "db_id": "formula_1",
+  "question": "How many pit stops did Sebastian Vettel make in the 2011 Chinese Grand Prix?",
+  "evidence": "",
+  "sql": "SELECT COUNT(*) FROM pitStops p JOIN races r ON p.raceId = r.raceId JOIN drivers d ON p.driverId = d.driverId WHERE r.year = 2011 AND r.name = 'Chinese Grand Prix' AND d.forename = 'Sebastian' AND d.surname = 'Vettel'",
+  "difficulty": "challenging"
+ },
+ {
+  "id": "formula_1_10",
+  "db_id": "formula_1",
+  "question": "What was the average pit stop time in milliseconds at the 2012 Malaysian Grand Prix?",
+  "evidence": "",
+  "sql": "SELECT AVG(p.milliseconds) FROM pitStops p JOIN races r ON p.raceId = r.raceId WHERE r.year = 2012 AND r.name = 'Malaysian Grand Prix'",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "formula_1_11",
+  "db_id": "formula_1",
+  "question": "List the names of the circuits in Italy.",
+  "evidence": "",
+  "sql": "SELECT name FROM circuits WHERE country = 'Italy'",
+  "difficulty": "simple"
+ },
+ {
+  "id": "formula_1_12",
+  "db_id": "formula_1",
+  "question": "What is Max Verstappen's driver code?",
+  "evidence": "",
+  "sql": "SELECT code FROM drivers WHERE forename = 'Max' AND surname = 'Verstappen'",
+  "difficulty": "simple"
+ },
+ {
+  "id": "formula_1_13",
+  "db_id": "formula_1",
+  "question": "How many races have been held at Silverstone Circuit?",
+  "evidence": "",
+  "sql": "SELECT COUNT(*) FROM races r JOIN circuits c ON r.circuitId = c.circuitId WHERE c.name = 'Silverstone Circuit'",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "formula_1_14",
+  "db_id": "formula_1",
+  "question": "Which driver started from pole position the most times in qualifying?",
+  "evidence": "pole position refers to qualifying position = 1",
+  "sql": "SELECT d.forename, d.surname FROM qualifying q JOIN drivers d ON q.driverId = d.driverId WHERE q.position = 1 GROUP BY d.driverId ORDER BY COUNT(*) DESC LIMIT 1",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "formula_1_15",
+  "db_id": "formula_1",
+  "question": "How many constructors are German?",
+  "evidence": "German refers to nationality = 'German'",
+  "sql": "SELECT COUNT(*) FROM constructors WHERE nationality = 'German'",
+  "difficulty": "simple"
+ },
+ {
+  "id": "formula_1_16",
+  "db_id": "formula_1",
+  "question": "Apart from finishing, what is the most common race result status?",
+  "evidence": "Exclude 'Finished' and statuses that start with '+' (lapped cars).",
+  "sql": "SELECT s.status FROM results r JOIN status s ON r.statusId = s.statusId WHERE s.status <> 'Finished' AND s.status NOT LIKE '+%' GROUP BY s.statusId ORDER BY COUNT(*) DESC LIMIT 1",
+  "difficulty": "challenging"
+ },
+ {
+  "id": "formula_1_17",
+  "db_id": "formula_1",
+  "question": "Which season had the most races?",
+  "evidence": "",
+  "sql": "SELECT year FROM races GROUP BY year ORDER BY COUNT(*) DESC LIMIT 1",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "formula_1_18",
+  "db_id": "formula_1",
+  "question": "Which drivers raced for Ferrari in 2008? Give forename and surname.",
+  "evidence": "",
+  "sql": "SELECT DISTINCT d.forename, d.surname FROM results res JOIN races r ON res.raceId = r.raceId JOIN constructors c ON res.constructorId = c.constructorId JOIN drivers d ON res.driverId = d.driverId WHERE c.name = 'Ferrari' AND r.year = 2008",
+  "difficulty": "challenging"
+ },
+ {
+  "id": "formula_1_19",
+  "db_id": "formula_1",
+  "question": "How many points did Michael Schumacher score over his career?",
+  "evidence": "career points = SUM(points) in results",
+  "sql": "SELECT SUM(r.points) FROM results r JOIN drivers d ON r.driverId = d.driverId WHERE d.forename = 'Michael' AND d.surname = 'Schumacher'",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "formula_1_20",
+  "db_id": "formula_1",
+  "question": "When was the first race held at Monza?",
+  "evidence": "Monza refers to circuitRef = 'monza'",
+  "sql": "SELECT MIN(r.date) FROM races r JOIN circuits c ON r.circuitId = c.circuitId WHERE c.circuitRef = 'monza'",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "formula_1_21",
+  "db_id": "formula_1",
+  "question": "How many laps did the winner of the 2014 Italian Grand Prix complete?",
+  "evidence": "winner refers to position = 1",
+  "sql": "SELECT res.laps FROM results res JOIN races r ON res.raceId = r.raceId WHERE r.year = 2014 AND r.name = 'Italian Grand Prix' AND res.position = 1",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "formula_1_22",
+  "db_id": "formula_1",
+  "question": "Which circuit lies furthest north?",
+  "evidence": "furthest north refers to MAX(lat)",
+  "sql": "SELECT name FROM circuits ORDER BY lat DESC LIMIT 1",
+  "difficulty": "simple"
+ },
+ {
+  "id": "formula_1_23",
+  "db_id": "formula_1",
+  "question": "What was Lewis Hamilton's Q1 time at the 2008 Australian Grand Prix?",
+  "evidence": "",
+  "sql": "SELECT q.q1 FROM qualifying q JOIN races r ON q.raceId = r.raceId JOIN drivers d ON q.driverId = d.driverId WHERE r.year = 2008 AND r.name = 'Australian Grand Prix' AND d.forename = 'Lewis' AND d.surname = 'Hamilton'",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "formula_1_24",
+  "db_id": "formula_1",
+  "question": "How many different drivers scored points in the 2016 season?",
+  "evidence": "scored points refers to points > 0 in results",
+  "sql": "SELECT COUNT(DISTINCT res.driverId) FROM results res JOIN races r ON res.raceId = r.raceId WHERE r.year = 2016 AND res.points > 0",
+  "difficulty": "challenging"
+ },
+ {
+  "id": "formula_1_25",
+  "db_id": "formula_1",
+  "question": "Who recorded the quickest single lap at the 2010 Bahrain Grand Prix?",
+  "evidence": "quickest lap refers to MIN(milliseconds) in lapTimes",
+  "sql": "SELECT d.forename, d.surname FROM lapTimes l JOIN races r ON l.raceId = r.raceId JOIN drivers d ON l.driverId = d.driverId WHERE r.year = 2010 AND r.name = 'Bahrain Grand Prix' ORDER BY l.milliseconds ASC LIMIT 1",
+  "difficulty": "challenging"
+ },
+ {
+  "id": "formula_1_26",
+  "db_id": "formula_1",
+  "question": "What percentage of race results in 2010 had the status Finished?",
+  "evidence": "",
+  "sql": "SELECT CAST(SUM(CASE WHEN s.status = 'Finished' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(*) FROM results res JOIN races r ON res.raceId = r.raceId JOIN status s ON res.statusId = s.statusId WHERE r.year = 2010",
+  "difficulty": "challenging"
+ },
+ {
+  "id": "formula_1_27",
+  "db_id": "formula_1",
+  "question": "What is the nationality of the Red Bull constructor?",
+  "evidence": "",
+  "sql": "SELECT nationality FROM constructors WHERE name = 'Red Bull'",
+  "difficulty": "simple"
+ },
+ {
+  "id": "formula_1_28",
+  "db_id": "formula_1",
+  "question": "How many races in the 2005 season were held in the USA?",
+  "evidence": "",
+  "sql": "SELECT COUNT(*) FROM races r JOIN circuits c ON r.circuitId = c.circuitId WHERE r.year = 2005 AND c.country = 'USA'",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "formula_1_29",
+  "db_id": "formula_1",
+  "question": "Who is the youngest driver in the database?",
+  "evidence": "youngest refers to the latest dob",
+  "sql": "SELECT forename, surname FROM drivers ORDER BY dob DESC LIMIT 1",
+  "difficulty": "simple"
+ },
+ {
+  "id": "formula_1_30",
+  "db_id": "formula_1",
+  "question": "What was Jenson Button's championship position after the final race of 2009?",
+  "evidence": "final race refers to MAX(round) of 2009",
+  "sql": "SELECT ds.position FROM driverStandings ds JOIN races r ON ds.raceId = r.raceId JOIN drivers d ON ds.driverId = d.driverId WHERE d.forename = 'Jenson' AND d.surname = 'Button' AND r.year = 2009 AND r.round = (SELECT MAX(round) FROM races WHERE year = 2009)",
+  "difficulty": "challenging"
+ },
+ {
+  "id": "formula_1_31",
+  "db_id": "formula_1",
+  "question": "What was the average fastest lap speed at the 2010 Monaco Grand Prix?",
+  "evidence": "",
+  "sql": "SELECT AVG(CAST(res.fastestLapSpeed AS REAL)) FROM results res JOIN races r ON res.raceId = r.raceId WHERE r.year = 2010 AND r.name = 'Monaco Grand Prix'",
+  "difficulty": "moderate"
+ },
+ {
+  "id": "formula_1_32",
+  "db_id": "formula_1",
+  "question": "Which drivers have used the permanent number 44?",
+  "evidence": "",
+  "sql": "SELECT forename, surname FROM drivers WHERE number = 44",
+  "difficulty": "simple"
+ }
+]

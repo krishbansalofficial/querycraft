@@ -1,0 +1,12 @@
+# DoRA on the same 4-bit base, at the rank that won the QLoRA sweep on val
+inherit: ../train.yaml
+name: qwen7b_dora_best
+model: Qwen/Qwen2.5-Coder-7B-Instruct
+train:
+  method: dora
+  rank: best
+  rank_from: [qwen7b_qlora_r8, qwen7b_qlora_r16, qwen7b_qlora_r64]
+  per_device_batch: 4
+  grad_accum: 4
+eval:
+  gpu_memory_utilization: 0.90

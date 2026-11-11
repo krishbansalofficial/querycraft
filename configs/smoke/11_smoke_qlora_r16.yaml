@@ -1,0 +1,17 @@
+inherit: ../train.yaml
+name: smoke_qlora_r16
+model: Qwen/Qwen2.5-Coder-0.5B-Instruct
+train:
+  method: qlora
+  rank: 16
+  n_train: 20
+  max_steps: 4
+  save_steps: 2
+  select_steps: [2, 4]
+  per_device_batch: 2
+  grad_accum: 2
+eval:
+  limit: 20
+  gpu_memory_utilization: 0.6
+  max_model_len: 3072
+  enforce_eager: true
