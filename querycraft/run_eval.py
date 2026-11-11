@@ -10,6 +10,7 @@ Each vLLM engine runs in its own subprocess so GPU memory is fully released betw
     python -m querycraft.run_eval configs/local/qwen1.5b_qlora_r16.yaml
 """
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -49,6 +50,12 @@ def _serving(cfg, ckpt):
     return str(ckpt), None  # full fine tune checkpoint
 
 
+def _drop_merged(ckpt, model_path):
+    """A merged DoRA model is a 15 GB cache for 7B; delete it once served (re-merging takes minutes)."""
+    if ckpt is not None and is_dora(ckpt) and model_path:
+        shutil.rmtree(model_path, ignore_errors=True)
+
+
 def main(cfg_path):
     cfg = load_config(cfg_path)
     ev_dir = run_dir(cfg) / "eval"
@@ -72,6 +79,7 @@ def main(cfg_path):
                     mp, ad = _serving(cfg, c)
                     _engine(cfg_path, mp, [{"kind": "split", "split": "val", "adapter": ad,
                                             "out": str(ev_dir / f"val_{c.name}.jsonl")}])
+                    _drop_merged(c, mp)
             for c in ckpts:
                 val[c.name] = score_file(ev_dir / f"val_{c.name}.jsonl")["ex"]
             chosen = max(ckpts, key=lambda c: (val[c.name], int(c.name.split("-")[1])))  # ties -> later step
@@ -84,6 +92,7 @@ def main(cfg_path):
         if cfg["eval"].get("forgetting"):
             jobs.append({"kind": "forgetting", "adapter": adapter, "out": str(ev_dir / f"forgetting_{tag}.json")})
         _engine(cfg_path, model_path, jobs)
+        _drop_merged(chosen, model_path)
         for s in cfg["eval"]["splits"]:
             results[s] = score_file(ev_dir / f"{s}_{tag}.jsonl")
         if cfg["eval"].get("forgetting"):

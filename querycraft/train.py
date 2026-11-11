@@ -4,16 +4,35 @@
 """
 import json
 import os
+import shutil
 import sys
 from pathlib import Path
 
 import torch
 from datasets import Dataset
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, set_seed
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, TrainerCallback, set_seed
 
 from .config import load_config, logged_stage, run_dir
 from .data import load_split
 from .prompts import PromptBuilder
+
+
+class PruneCheckpoints(TrainerCallback):
+    """Only the newest checkpoint needs optimizer state (for resume); only selection candidates need weights.
+    Without this a 1.5B full fine tune writes about 150 GB of checkpoints."""
+    def __init__(self, keep_steps):
+        self.keep = {f"checkpoint-{s}" for s in keep_steps}
+
+    def on_save(self, args, state, control, **kw):
+        if not state.is_world_process_zero:
+            return
+        old = sorted(Path(args.output_dir).glob("checkpoint-*"), key=lambda p: int(p.name.split("-")[1]))[:-1]
+        for c in old:
+            if c.name not in self.keep:
+                shutil.rmtree(c, ignore_errors=True)
+            else:
+                for f in c.glob("optimizer.*"):
+                    f.unlink()
 
 
 def build_dataset(cfg, tok):
@@ -99,7 +118,8 @@ def main(cfg_path):
             logging_steps=10, save_strategy="steps", save_steps=t["save_steps"], save_total_limit=None,
             save_only_model=False, include_num_input_tokens_seen=True, report_to="wandb" if use_wandb else "none", dataloader_num_workers=2,
         )
-        trainer = SFTTrainer(model=model, args=args, train_dataset=ds, processing_class=tok, peft_config=peft_config)
+        trainer = SFTTrainer(model=model, args=args, train_dataset=ds, processing_class=tok, peft_config=peft_config,
+                             callbacks=[PruneCheckpoints(t["select_steps"])])
         if peft_config is not None:
             trainable, total = trainer.model.get_nb_trainable_parameters()
             meta["trainable_params"], meta["total_params"] = trainable, total

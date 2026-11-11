@@ -16,7 +16,7 @@ def wilson(k, n, z=1.96):
     d = 1 + z * z / n
     c = (p + z * z / (2 * n)) / d
     h = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d
-    return (round(100 * (c - h), 2), round(100 * (c + h), 2))
+    return (max(0.0, round(100 * (c - h), 2)), round(100 * (c + h), 2))  # max() drops the -0.0 float artefact
 
 
 def summarize(preds, verdicts):

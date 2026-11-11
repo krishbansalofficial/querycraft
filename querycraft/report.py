@@ -147,7 +147,7 @@ def main():
     md += "\n" + "\n".join(f"![{f}](docs/figures/{f})" for f in figs)
     Path("docs").mkdir(exist_ok=True)
     Path("docs/results.md").write_text(md)
-    if README.exists():
+    if README.exists() and RUNS_DIR.name == "runs":  # smoke runs (runs_smoke) never touch the README
         s = README.read_text()
         s = re.sub(r"(<!-- RESULTS:START -->).*(<!-- RESULTS:END -->)", lambda m: f"{m.group(1)}\n{md}\n{m.group(2)}", s, flags=re.S)
         README.write_text(s)
