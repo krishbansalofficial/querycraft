@@ -10,3 +10,4 @@ train:
   grad_accum: 4
 eval:
   gpu_memory_utilization: 0.90
+budget_hours: 5.0   # worst case A100 hours, train + eval (budget guardrail)

@@ -7,3 +7,4 @@ runs_smoke/
 wandb/
 *.schema3.json
 session_logs/
+runs_probe

@@ -6,3 +6,4 @@ prompt:
 eval:
   gpu_memory_utilization: 0.90
   forgetting: false
+budget_hours: 0.4   # worst case A100 hours, train + eval (budget guardrail)

@@ -17,6 +17,24 @@ from .data import load_split
 from .prompts import PromptBuilder
 
 
+LAYOUT_KEYS = ("method", "rank", "lr", "max_steps", "per_device_batch", "grad_accum", "max_len", "n_train")
+
+
+def check_layout(ckpt_dir, t, seed):
+    """Guardrail: a run may only resume with the exact batch layout it started with (e.g. after moving between
+    the A100 and the laptop). A different per device batch would replay a different data order."""
+    want = {k: t.get(k) for k in LAYOUT_KEYS} | {"seed": seed}
+    f = Path(ckpt_dir) / "layout.json"
+    if f.exists():
+        have = json.loads(f.read_text())
+        diff = {k: (have.get(k), v) for k, v in want.items() if have.get(k) != v}
+        if diff:
+            raise SystemExit(f"refusing to resume {ckpt_dir}: layout changed {diff}. Use the original config.")
+    else:
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(json.dumps(want, indent=1))
+
+
 class PruneCheckpoints(TrainerCallback):
     """Only the newest checkpoint needs optimizer state (for resume); only selection candidates need weights.
     Without this a 1.5B full fine tune writes about 150 GB of checkpoints."""
@@ -116,7 +134,7 @@ def main(cfg_path):
             bf16=True, gradient_checkpointing=True, gradient_checkpointing_kwargs={"use_reentrant": False},
             max_length=t["max_len"], completion_only_loss=True, packing=False,
             logging_steps=10, save_strategy="steps", save_steps=t["save_steps"], save_total_limit=None,
-            save_only_model=False, include_num_input_tokens_seen=True, report_to="wandb" if use_wandb else "none", dataloader_num_workers=2,
+            save_only_model=False, include_num_input_tokens_seen=True, use_liger_kernel=t.get("liger", False), report_to="wandb" if use_wandb else "none", dataloader_num_workers=2,
         )
         trainer = SFTTrainer(model=model, args=args, train_dataset=ds, processing_class=tok, peft_config=peft_config,
                              callbacks=[PruneCheckpoints(t["select_steps"])])
@@ -125,6 +143,7 @@ def main(cfg_path):
             meta["trainable_params"], meta["total_params"] = trainable, total
         resume = any(ckpt_dir.glob("checkpoint-*"))
         meta["resumed"] = resume
+        check_layout(ckpt_dir, t, cfg["seed"])
         trainer.train(resume_from_checkpoint=resume or None)
         if not (ckpt_dir / f"checkpoint-{t['max_steps']}").exists():
             trainer.save_model(str(ckpt_dir / f"checkpoint-{t['max_steps']}"))
