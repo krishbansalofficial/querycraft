@@ -40,6 +40,8 @@ def run_dir(cfg) -> Path:
 
 
 def _git_commit():
+    if os.environ.get("QC_GIT_COMMIT"):  # set by the Modal launcher; the container has no .git
+        return os.environ["QC_GIT_COMMIT"]
     try:
         sha = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True, stderr=subprocess.DEVNULL).strip()
         dirty = bool(subprocess.check_output(["git", "status", "--porcelain", "--untracked-files=no"], text=True).strip())
