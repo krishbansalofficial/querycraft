@@ -23,7 +23,7 @@ SQLITE_MAGIC = b"SQLite format 3\x00"
 MAX_ROWS = 200
 
 
-def build(cfg_path, target="0.7"):
+def build(cfg_path, target="0.7"):  # threshold that answered 70% of val questions
     cfg = load_config(cfg_path)
     rdir = run_dir(cfg)
     tag = json.loads((rdir / "results.json").read_text()).get("selected_checkpoint", "base")

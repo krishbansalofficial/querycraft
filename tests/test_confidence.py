@@ -1,6 +1,7 @@
 import sqlite3
 
-from querycraft.confidence import auroc, selective, signature, thresholds_for_targets, vote
+from querycraft.confidence import (auroc, selective, signature, thresholds_for_coverage, thresholds_for_targets,
+                                   vote)
 
 
 def _db(tmp_path):
@@ -40,3 +41,5 @@ def test_selective_metrics():
     assert auroc(conf, correct) == 1.0
     assert selective(conf, correct, 0.875) == {"threshold": 0.875, "coverage": 50.0, "accuracy": 100.0}
     assert thresholds_for_targets(conf, correct, (0.6, 0.99)) == {"0.6": 0.5, "0.99": 0.875}
+    # answer at least half: 0.875 keeps 2 of 4; at least 70%: needs 3 of 4, so 0.5
+    assert thresholds_for_coverage(conf, (0.5, 0.7)) == {"0.5": 0.875, "0.7": 0.5}

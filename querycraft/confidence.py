@@ -18,7 +18,8 @@ from pathlib import Path
 from .config import load_config, logged_stage, run_dir
 from .execution import execute, score_one
 
-TARGETS = (0.6, 0.7, 0.8)   # selective accuracy targets used to pick thresholds on val
+TARGETS = (0.6, 0.7, 0.8)   # selective accuracy targets (reported; they do not transfer from val to dev)
+COVERAGE = (0.5, 0.7, 0.9)  # answer this share of val questions; the thresholds used on dev and in the demo
 VOTE_TIMEOUT = 15.0         # ponytail: half the scoring timeout; slow samples just lose their vote
 
 
@@ -63,13 +64,19 @@ def selective(conf, correct, t):
 
 
 def thresholds_for_targets(conf, correct, targets=TARGETS):
-    """Lowest threshold whose selective accuracy reaches each target (max coverage at that accuracy)."""
+    """Lowest threshold whose selective accuracy reaches each target (max coverage at that accuracy).
+    Kept for the record: val (unseen databases) is harder than dev, so accuracy targets do not transfer."""
     out = {}
     for target in targets:
         ok = [t for t in sorted(set(conf)) if (s := selective(conf, correct, t))["accuracy"] is not None
               and s["accuracy"] >= 100 * target]
         out[str(target)] = ok[0] if ok else None
     return out
+
+
+def thresholds_for_coverage(conf, targets=COVERAGE):
+    """Highest threshold that still answers at least the target share of questions."""
+    return {str(c): max(t for t in set(conf) if sum(x >= t for x in conf) >= c * len(conf)) for c in targets}
 
 
 def greedy_sql(rdir, split, tag, rows):
@@ -111,14 +118,17 @@ def main(cfg_path):
     out.mkdir(exist_ok=True)
     with logged_stage(cfg, "confidence") as meta:
         model_path, adapter = _serving(cfg, ckpt)
-        gen = Generator(cfg, model_path)
-        pb = PromptBuilder(gen.tok, cfg["prompt"]["schema_budget"])
+        engine = {}  # loaded on first cache miss, so re-summarising cached samples needs no GPU
         summary = {"checkpoint": tag, "n": c["n"], "val_by_temperature": {}}
 
         def run(split, temp):
             f = out / f"{split}_T{temp}.jsonl"
             if f.exists():
                 return [json.loads(l) for l in f.read_text().splitlines()]
+            if not engine:
+                engine["gen"] = Generator(cfg, model_path)
+                engine["pb"] = PromptBuilder(engine["gen"].tok, cfg["prompt"]["schema_budget"])
+            gen, pb = engine["gen"], engine["pb"]
             rows = load_split(split)
             if cfg["eval"].get("limit"):
                 rows = rows[: cfg["eval"]["limit"]]
@@ -134,8 +144,10 @@ def main(cfg_path):
         best_t = max(c["temperatures"], key=lambda t: (summary["val_by_temperature"][str(t)]["auroc"] or 0,
                                                        summary["val_by_temperature"][str(t)]["vote_ex"]))
         val = [r for r in run("val", best_t) if not r["gold_error"]]
-        picks = thresholds_for_targets([r["confidence"] for r in val], [r["ex"] for r in val])
-        summary |= {"temperature": best_t, "thresholds_from_val": picks}
+        vc = [r["confidence"] for r in val]
+        picks = thresholds_for_coverage(vc)
+        summary |= {"temperature": best_t, "thresholds_from_val": picks,
+                    "accuracy_target_thresholds_from_val": thresholds_for_targets(vc, [r["ex"] for r in val])}
         for split in ("dev", "heldback"):
             recs = run(split, best_t)
             s = _summary(recs)
