@@ -3,12 +3,12 @@
     modal run scripts/modal_app.py::prepare      # CPU only: BIRD onto the volume, splits, schema cache, tests
     modal run scripts/modal_app.py --smoke       # 0.5B rehearsal on an L4 (a few cents)
     modal run scripts/modal_app.py --dry-run     # print which jobs this billing cycle's budget allows
-    modal run scripts/modal_app.py               # run them; jobs that do not fit wait for the next cycle
+    modal run --detach scripts/modal_app.py      # run them; jobs that do not fit wait for the next cycle
     modal volume get querycraft-vol runs/<name> runs/   # copy results back for `make report`
 
 Guardrails: a job starts only if its worst case cost fits under the cap (no run is ever cut off halfway),
 DoRA waits until every sweep run it picks its rank from is finished, and every job's real cost is appended
-to modal_ledger.json (committed with the code).
+to /vol/modal_ledger.json. The queue loop itself runs on Modal, so closing the laptop does not stop it.
 """
 import subprocess
 import time
@@ -57,12 +57,6 @@ def prepare():
     vol.commit()
 
 
-@app.function(cpu=0.25)
-def finished(runs):
-    vol.reload()
-    return [p.parent.name for p in Path(f"/vol/{runs}").glob("*/results.json")]
-
-
 def _job(cfg, runs, git):
     import os
     env = dict(os.environ, RUNS_DIR=f"/vol/{runs}", QC_GIT_COMMIT=git)
@@ -84,22 +78,21 @@ def smoke_job(cfg, runs, git):
     _job(cfg, runs, git)
 
 
-@app.local_entrypoint()
-def main(smoke: bool = False, dry_run: bool = False):
+@app.function(cpu=0.25, memory=1024, timeout=24 * 3600)
+def queue(smoke, dry_run, git):
+    """The job loop runs on Modal (a few cents of CPU), so it survives the laptop sleeping."""
     import sys
-    sys.path.insert(0, str(REPO))
+    sys.path.insert(0, "/root/querycraft")
     from querycraft import budget
     from querycraft.config import load_config
 
     profile, runs, order, fn = ("smoke", "runs_smoke", SMOKE_ORDER, smoke_job) if smoke else \
                                ("rented", "runs", ORDER, job)
-    git = subprocess.check_output(["git", "-C", str(REPO), "rev-parse", "HEAD"], text=True).strip()
-    if subprocess.check_output(["git", "-C", str(REPO), "status", "--porcelain", "--untracked-files=no"], text=True):
-        git += "-dirty"
-    ledger = REPO / "modal_ledger.json"
-    done = set(finished.remote(runs))
+    ledger = "/vol/modal_ledger.json"
+    vol.reload()
+    done = {p.parent.name for p in Path(f"/vol/{runs}").glob("*/results.json")}
     for f in order:
-        cfg = load_config(REPO / "configs" / profile / f)
+        cfg = load_config(Path("/root/querycraft/configs") / profile / f)
         name, rows = cfg["name"], budget.load(ledger)
         if name in done:
             print(f"done     {name}")
@@ -123,4 +116,13 @@ def main(smoke: bool = False, dry_run: bool = False):
             print(f"FAILED   {name}: {e}")
         finally:
             budget.record(ledger, name, cfg.get("budget_hours", 0.3), (time.time() - t0) / 3600)
+            vol.commit()
     print(f"spent this cycle: ${budget.spent(budget.load(ledger))} of ${budget.CAP_USD} cap")
+
+
+@app.local_entrypoint()
+def main(smoke: bool = False, dry_run: bool = False):
+    git = subprocess.check_output(["git", "-C", str(REPO), "rev-parse", "HEAD"], text=True).strip()
+    if subprocess.check_output(["git", "-C", str(REPO), "status", "--porcelain", "--untracked-files=no"], text=True):
+        git += "-dirty"
+    queue.remote(smoke, dry_run, git)  # use `modal run --detach` so it keeps going after this terminal closes
