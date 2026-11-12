@@ -1,7 +1,7 @@
 """Ask questions of any SQLite database, entirely on this machine. The model answers only when confident.
 
     pip install -r requirements-demo.txt
-    python -m querycraft.demo configs/local/11_qwen1.5b_lora_r16.yaml     # then open http://127.0.0.1:7860
+    python -u -m querycraft.demo configs/local/11_qwen1.5b_lora_r16.yaml  # then open http://127.0.0.1:7860
 
 Uses the run's selected checkpoint and the temperature and threshold chosen on val by querycraft.confidence.
 Databases are opened read only with a timeout, and the server listens on localhost only.
@@ -52,13 +52,16 @@ def build(cfg_path, target="0.7"):  # threshold that answered 70% of val questio
         votes = f"{round(c * n)}/{n} sampled queries agree"
         if err:
             status = f"### ⚠️ Could not answer\nThe best query failed: `{err}` ({votes})."
+        elif not rows:
+            status = (f"### ⚠️ No rows\nThe query ran but returned nothing ({votes}). Often a filter value the "
+                      f"database spells differently; try adding a hint.")
         elif c >= threshold:
             status = f"### ✅ Answer\n{votes} (needs {round(threshold * n)}/{n} to answer; {k} distinct results)."
         else:
             status = (f"### ⚠️ Not sure\nOnly {votes} (needs {round(threshold * n)}/{n}). The model's candidate "
                       f"answers disagree, so treat the result below as a guess.")
-        table = [list(r) for r in rows] if rows else None
-        return status, sql, (gr.update(value=table, headers=cols) if table else None)
+        # always replace the table, so an empty or failed query never shows the previous question's result
+        return status, sql, gr.update(value=[list(r) for r in rows or []], headers=cols or ["(no result)"])
 
     with gr.Blocks(title="Querycraft") as ui:
         gr.Markdown(f"# Querycraft\nAsk a question about a SQLite database. Model: `{cfg['name']}` "
