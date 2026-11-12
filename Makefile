@@ -7,7 +7,7 @@ BASELINES := $(sort $(wildcard $(CFG_DIR)/0*.yaml))
 TRAINED := $(sort $(filter-out $(BASELINES),$(wildcard $(CFG_DIR)/*.yaml)))
 export PYTHONPATH := $(CURDIR)
 
-.PHONY: env data baseline train eval report test all smoke
+.PHONY: env data baseline train eval report test all smoke audit
 
 env:
 	bash scripts/setup_env.sh
@@ -39,3 +39,6 @@ all: data test baseline train eval report
 # local rehearsal of the rented session on Qwen2.5 Coder 0.5B with 20 examples
 smoke:
 	RUNS_DIR=runs_smoke SHUTDOWN=0 PROFILE=smoke bash scripts/runpod_session.sh
+
+audit:
+	 -m querycraft.audit runs
