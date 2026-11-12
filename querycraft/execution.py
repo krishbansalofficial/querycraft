@@ -20,15 +20,19 @@ class QueryTimeout(Exception):
     pass
 
 
-def execute(db_path, sql, timeout=30.0, max_rows=100_000):
-    """Return (rows, error_string|None). Read only connection, wall clock timeout."""
+def execute(db_path, sql, timeout=30.0, max_rows=100_000, columns=None):
+    """Return (rows, error_string|None). Read only connection, wall clock timeout.
+    Pass a list as `columns` to receive the result's column names (used by the demo)."""
     deadline = time.monotonic() + timeout
     conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, check_same_thread=False)
     conn.text_factory = lambda b: b.decode(errors="replace")
     # returning nonzero from the handler aborts the statement
     conn.set_progress_handler(lambda: int(time.monotonic() > deadline), 10_000)
     try:
-        rows = conn.execute(sql).fetchmany(max_rows)
+        cur = conn.execute(sql)
+        rows = cur.fetchmany(max_rows)
+        if columns is not None:
+            columns.extend(d[0] for d in cur.description or ())
         return rows, None
     except sqlite3.OperationalError as e:
         if "interrupted" in str(e):

@@ -1,0 +1,2 @@
+# Optional: the local demo (python -m querycraft.demo). Kept out of requirements.txt so training images stay lean.
+gradio==6.32.0

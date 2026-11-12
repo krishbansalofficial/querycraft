@@ -58,11 +58,13 @@ class Generator:
         i = self._lora_ids.setdefault(adapter, len(self._lora_ids) + 1)
         return LoRARequest(f"a{i}", i, adapter)
 
-    def generate(self, prompts, adapter=None, max_tokens=None):
+    def generate(self, prompts, adapter=None, max_tokens=None, n=1, temperature=0.0):
+        """Greedy by default. With n > 1 returns a list of n samples per prompt."""
         from vllm import SamplingParams
-        sp = SamplingParams(temperature=0.0, max_tokens=max_tokens or self.cfg["eval"]["max_new_tokens"])
+        sp = SamplingParams(n=n, temperature=temperature, seed=self.cfg["seed"],
+                            max_tokens=max_tokens or self.cfg["eval"]["max_new_tokens"])
         outs = self.llm.generate(prompts, sp, lora_request=self._lora(adapter))
-        return [o.outputs[0].text for o in outs]
+        return [o.outputs[0].text for o in outs] if n == 1 else [[c.text for c in o.outputs] for o in outs]
 
 
 def pick_shots(cfg):
