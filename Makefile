@@ -41,4 +41,4 @@ smoke:
 	RUNS_DIR=runs_smoke SHUTDOWN=0 PROFILE=smoke bash scripts/runpod_session.sh
 
 audit:
-	 -m querycraft.audit runs
+	$(PY) -m querycraft.audit runs
