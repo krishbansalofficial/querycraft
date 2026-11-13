@@ -6,6 +6,12 @@
 | 1.5B few shot (3) | 21.4 | 25.95 [23.81, 28.2] | 28.29 | 32.11 | 16.59 | 16.55 | 49.0 | 29.72 |  |  |  |  |
 | 1.5B QLoRA r16 | 32.2 | 42.31 [39.86, 44.8] | 47.59 | 50.05 | 32.54 | 24.14 | 66.0 | 52.49 | 68.9 | 68.09 | NVIDIA GeForce RTX 4070 Laptop GPU x1 | 2.12 h |
 | 1.5B LoRA (bf16) r16 | 33.6 | 43.94 [41.47, 46.43] | 49.09 | 51.89 | 32.97 | 28.28 | 68.0 | 54.66 | 68.9 | 68.09 | NVIDIA GeForce RTX 4070 Laptop GPU x1 | 1.50 h |
+| 7B zero shot | 53.2 | 51.43 [48.93, 53.93] | 56.26 | 58.16 | 43.97 | 32.41 | 88.0 | 62.91 | 87.8 | 85.6 |  |  |
+| 7B few shot (3) | 50.4 | 50.13 [47.63, 52.63] | 55.74 | 57.62 | 40.73 | 32.41 | 90.0 | 60.74 |  |  |  |  |
+| 7B QLoRA r8 | 56.4 | 51.69 [49.19, 54.19] | 57.63 | 59.03 | 43.75 | 30.34 | 82.0 | 62.47 | 84.76 | 84.44 | NVIDIA A100-SXM4-80GB x1 | 1.45 h |
+| 7B QLoRA r16 | 56.0 | 52.15 [49.65, 54.64] | 57.95 | 59.35 | 44.83 | 29.66 | 84.0 | 63.77 | 84.15 | 83.66 | NVIDIA A100-SXM4-80GB x1 | 1.46 h |
+| 7B QLoRA r64 | 56.0 | 52.67 [50.17, 55.16] | 58.15 | 59.14 | 45.91 | 33.1 | 83.0 | 62.47 | 83.54 | 82.88 | NVIDIA A100-SXM4-80GB x1 | 1.47 h |
+| 1.5B full fine tune | 36.2 | 42.76 [40.31, 45.25] | 47.52 | 49.95 | 34.27 | 24.14 | 65.0 | 54.01 | 34.15 | 52.14 | NVIDIA A100-SXM4-80GB x1 | 0.48 h |
 
 Held back EX vs dev EX on the same three databases is the contamination check: a model that memorised BIRD dev would score clearly higher on dev questions than on new questions over the same schemas.
 
@@ -17,6 +23,12 @@ Held back EX vs dev EX on the same three databases is the contamination check: a
 | 1.5B few shot (3) | 30 | 187 | 660 | 94 | 61 | 2 | 102 |
 | 1.5B QLoRA r16 | 1 | 243 | 307 | 145 | 78 | 0 | 111 |
 | 1.5B LoRA (bf16) r16 | 3 | 241 | 268 | 155 | 75 | 0 | 118 |
+| 7B zero shot | 5 | 189 | 202 | 142 | 75 | 1 | 131 |
+| 7B few shot (3) | 7 | 190 | 217 | 141 | 74 | 2 | 134 |
+| 7B QLoRA r8 | 1 | 192 | 162 | 170 | 74 | 0 | 142 |
+| 7B QLoRA r16 | 1 | 203 | 161 | 155 | 74 | 0 | 140 |
+| 7B QLoRA r64 | 2 | 197 | 157 | 153 | 76 | 0 | 141 |
+| 1.5B full fine tune | 8 | 244 | 247 | 167 | 83 | 1 | 128 |
 
 ### Checkpoint selection on validation (EX %, chosen in bold)
 
@@ -24,6 +36,10 @@ Held back EX vs dev EX on the same three databases is the contamination check: a
 |---|---|---|---|---|---|
 | 1.5B QLoRA r16 | 31.6 | 32.2 | **32.2** | 18464768 | 2.37 |
 | 1.5B LoRA (bf16) r16 | 33.2 | **33.6** | 33.2 | 18464768 | 3.68 |
+| 7B QLoRA r8 | 54.6 | 56.0 | **56.4** | 20185088 | 13.72 |
+| 7B QLoRA r16 | 54.0 | 55.4 | **56.0** | 40370176 | 13.83 |
+| 7B QLoRA r64 | 52.0 | 54.6 | **56.0** | 161480704 | 14.74 |
+| 1.5B full fine tune | 33.4 | 34.0 | **36.2** | all | 26.95 |
 
 ### Knowing when it is wrong: voting and abstention (BIRD dev)
 
@@ -39,13 +55,7 @@ Held back EX vs dev EX on the same three databases is the contamination check: a
 
 These runs are configured but have no logged results yet. No numbers are reported for them.
 
-* 7B zero shot (`configs/rented/01_qwen7b_zeroshot.yaml`, A100 80GB)
-* 7B few shot (3) (`configs/rented/02_qwen7b_fewshot.yaml`, A100 80GB)
-* 7B QLoRA r8 (`configs/rented/10_qwen7b_qlora_r8.yaml`, A100 80GB)
-* 7B QLoRA r16 (`configs/rented/11_qwen7b_qlora_r16.yaml`, A100 80GB)
-* 7B QLoRA r64 (`configs/rented/12_qwen7b_qlora_r64.yaml`, A100 80GB)
 * 7B DoRA (4 bit base) at best sweep rank (`configs/rented/20_qwen7b_dora_best.yaml`, A100 80GB)
-* 1.5B full fine tune (`configs/rented/30_qwen1.5b_full.yaml`, A100 80GB)
 
 ![dev_ex_by_difficulty.png](docs/figures/dev_ex_by_difficulty.png)
 ![learn_vs_forget.png](docs/figures/learn_vs_forget.png)
