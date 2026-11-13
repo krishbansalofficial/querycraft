@@ -1,7 +1,8 @@
 # Plan: reinforcement learning with an execution reward (GRPO)
 
-Status: planned, not started. Nothing here runs on Modal until the 7B study is finished and the 1.5B result
-justifies it.
+Status: in progress on the laptop. Step 1 done (`querycraft/reward.py`, `tests/test_reward.py`); step 2 running
+(`querycraft/grpo_data.py`); step 3 written (`querycraft/grpo_train.py`). Nothing here runs on Modal until the
+1.5B result justifies it.
 
 ## Question
 
@@ -60,6 +61,13 @@ RL often makes a model more certain, so we also check whether the confidence AUR
 | 4. Arms B and C on the laptop (estimate 3 to 4 h each, firmed up by step 3) | 1 day |
 | 5. Evaluate, add a results table and the reward hacking plot | 0.5 day |
 | 6. Only if 1.5B gains: 7B arms on Modal in a later billing cycle, under the same spend cap | later |
+
+## Probe result (step 3)
+
+* Generating all 64 samples at once spilled past 8 GB: 418 s/step.
+* vLLM colocate does not fit: the training model leaves 3.8 GB free and vLLM needs a second 3 GB copy.
+* Generating one group of 8 per micro batch: 92 to 141 s/step (3 steps), so 250 steps is about 8 h per arm.
+* Per the guardrail below: 1,000 prompts, 125 steps, checkpoints every 25 (about 4 h per arm).
 
 ## Guardrails
 
