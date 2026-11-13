@@ -100,6 +100,22 @@ def tables(rows):
                 tp = r["train"].get("trainable_params") if r["train"] else None
                 out.append(f"| {_label(r)} | " + " | ".join(cells) + f" | {tp or 'all'} | {r['train'].get('peak_vram_gb', '') if r['train'] else ''} |")
             out.append("")
+        conf = [(r, json.loads(f.read_text())) for r in done if (f := r["dir"] / "confidence" / "confidence.json").exists()]
+        if conf:
+            out.append("### Knowing when it is wrong: voting and abstention (BIRD dev)\n")
+            out.append("8 sampled queries per question are executed and grouped by result; the largest group is the "
+                       "answer and its share is the confidence. Temperature and thresholds are chosen on val; the "
+                       "threshold columns answer only questions at or above the val threshold that kept 50% or 70% "
+                       "of val questions.\n")
+            out.append("| Model | Single answer EX | Vote of 8 EX | Confidence AUROC | Answers at val 50% threshold | "
+                       "EX there | Answers at val 70% threshold | EX there | Held back EX at val 50% threshold |")
+            out.append("|---|---|---|---|---|---|---|---|---|")
+            for r, c in conf:
+                d, h = c["dev"]["at_val_thresholds"], c["heldback"]["at_val_thresholds"]
+                out.append(f"| {_label(r)} | {r['res']['dev']['ex']} | {c['dev']['vote_ex']} | {c['dev']['auroc']} | "
+                           f"{d['0.5']['coverage']}% | {d['0.5']['accuracy']} | {d['0.7']['coverage']}% | "
+                           f"{d['0.7']['accuracy']} | {h['0.5']['accuracy']} ({h['0.5']['coverage']}% answered) |")
+            out.append("")
     if todo:
         out.append("### Targets (not yet measured)\n")
         out.append("These runs are configured but have no logged results yet. No numbers are reported for them.\n")
@@ -137,6 +153,19 @@ def plots(done):
         fig.tight_layout()
         fig.savefig(FIG / "learn_vs_forget.png", dpi=130)
         made.append("learn_vs_forget.png")
+    conf = [(r, json.loads(f.read_text())) for r in done if (f := r["dir"] / "confidence" / "confidence.json").exists()]
+    if conf:
+        fig, ax = plt.subplots(figsize=(6, 4))
+        for r, c in conf:
+            pts = [(p["coverage"], p["accuracy"]) for p in c["dev"]["curve"]]
+            ax.plot(*zip(*pts), marker="o", ms=3, label=_label(r))
+        ax.set_xlabel("Questions answered (%)")
+        ax.set_ylabel("Accuracy on answered questions (%)")
+        ax.set_title("Accuracy vs coverage on BIRD dev (vote of 8)")
+        ax.legend(fontsize=7)
+        fig.tight_layout()
+        fig.savefig(FIG / "accuracy_vs_coverage.png", dpi=130)
+        made.append("accuracy_vs_coverage.png")
     return made
 
 

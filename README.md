@@ -84,6 +84,16 @@ Held back EX vs dev EX on the same three databases is the contamination check: a
 | 1.5B QLoRA r16 | 31.6 | 32.2 | **32.2** | 18464768 | 2.37 |
 | 1.5B LoRA (bf16) r16 | 33.2 | **33.6** | 33.2 | 18464768 | 3.68 |
 
+### Knowing when it is wrong: voting and abstention (BIRD dev)
+
+8 sampled queries per question are executed and grouped by result; the largest group is the answer and its share is the confidence. Temperature and thresholds are chosen on val; the threshold columns answer only questions at or above the val threshold that kept 50% or 70% of val questions.
+
+| Model | Single answer EX | Vote of 8 EX | Confidence AUROC | Answers at val 50% threshold | EX there | Answers at val 70% threshold | EX there | Held back EX at val 50% threshold |
+|---|---|---|---|---|---|---|---|---|
+| 1.5B zero shot | 27.44 | 37.38 | 0.7693 | 56.23% | 54.29 | 84.67% | 43.68 | 86.3 (73.0% answered) |
+| 1.5B QLoRA r16 | 42.31 | 45.6 | 0.7494 | 56.03% | 61.23 | 85.91% | 51.03 | 87.14 (70.0% answered) |
+| 1.5B LoRA (bf16) r16 | 43.94 | 48.53 | 0.7411 | 56.49% | 64.09 | 81.41% | 55.29 | 90.77 (65.0% answered) |
+
 ### Targets (not yet measured)
 
 These runs are configured but have no logged results yet. No numbers are reported for them.
@@ -98,6 +108,7 @@ These runs are configured but have no logged results yet. No numbers are reporte
 
 ![dev_ex_by_difficulty.png](docs/figures/dev_ex_by_difficulty.png)
 ![learn_vs_forget.png](docs/figures/learn_vs_forget.png)
+![accuracy_vs_coverage.png](docs/figures/accuracy_vs_coverage.png)
 <!-- RESULTS:END -->
 
 ## Hardware
