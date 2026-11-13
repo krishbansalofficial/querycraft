@@ -53,6 +53,16 @@ columns per database), so the task tests schema understanding as much as SQL syn
   uses the rank that won the QLoRA sweep on validation.
 * **Inference.** vLLM, greedy, bf16 base for every model so precision is constant across comparisons. LoRA
   checkpoints are served as adapters; DoRA checkpoints are merged first because vLLM does not serve DoRA adapters.
+* **Confidence and abstention** (`querycraft/confidence.py`). Each question gets 8 sampled queries at a
+  temperature chosen on val. All 8 are executed and grouped by the rows they return; the largest group's query is
+  the answer, and the group's share of the 8 is the confidence. Below a threshold chosen on val, the model says it
+  is not sure instead of answering.
+* **Demo** (`querycraft/demo.py`). A local web page: pick a BIRD database or upload any SQLite file, ask a
+  question, and see the SQL, the rows and whether the model is confident. Databases open read only and the server
+  only listens on localhost. Run `pip install -r requirements-demo.txt`, then
+  `python -u -m querycraft.demo configs/local/11_qwen1.5b_lora_r16.yaml` and open http://127.0.0.1:7860.
+* **Audit** (`make audit`). Recounts every reported number from the per question files and re-executes a random
+  sample with an independent checker that shares no code with the scoring harness.
 
 ## Results
 
@@ -166,5 +176,13 @@ tests/        harness, split + leakage, schema
 * **FlashInfer sampler on a driver only machine.** vLLM 0.32 compiles a FlashInfer top k / top p sampling kernel at
   startup, which needs `nvcc`. WSL and slim pod images ship only the driver, so the first baseline crashed. Greedy
   decoding needs no such kernel, so `VLLM_USE_FLASHINFER_SAMPLER=0` is set before vLLM is imported.
+* **Accuracy targets for abstention.** Thresholds were first chosen on val to reach 60%, 70% or 80% accuracy.
+  Val uses databases never seen in training and is much harder than dev, so even unanimous answers only reached
+  58% there and no threshold qualified for the fine tuned models. Choosing thresholds by the share of val
+  questions answered transfers to dev far better and is what the table reports.
+* **7B on the 8 GB laptop.** 7B QLoRA training fits only by spilling about 1 GB into system memory, at 67 seconds
+  per step (about 10 hours per run), and vLLM 0.32 no longer serves the bitsandbytes 4 bit format, so 7B could not
+  be evaluated locally. All 7B runs moved to Modal's free monthly credit behind a spend cap
+  (`querycraft/budget.py`) that only starts a job if its worst case cost still fits.
 * **BIRD archive layout.** The train archive ships macOS `__MACOSX` resource fork files that mirror every database
   path. A naive path search picked them first, so validation pointed at non databases. The loader now skips them.
