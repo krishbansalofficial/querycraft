@@ -1,0 +1,5 @@
+# GRPO arm C: identical to arm B except the reward (partial credit by error category).
+inherit: 40_qwen1.5b_grpo_binary.yaml
+name: qwen1.5b_grpo_shaped
+train:
+  reward: shaped

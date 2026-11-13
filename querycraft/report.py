@@ -22,7 +22,8 @@ def _j(p):
 
 def collect():
     rows = []
-    for cfg_path in sorted(Path("configs").glob("[lr]*/*.yaml")):  # local + rented
+    paths = Path("configs").glob("[lrg]*/*.yaml")  # local + rented, then grpo (built on the local SFT run) last
+    for cfg_path in sorted(paths, key=lambda p: (p.parent.name == "grpo", str(p))):
         cfg = load_config(cfg_path)
         d = RUNS_DIR / cfg["name"]
         res, tm, em = _j(d / "results.json"), _j(d / "train_meta.json"), _j(d / "eval_meta.json")
@@ -31,7 +32,7 @@ def collect():
 
 
 def _size(model):
-    return re.search(r"(\d+(?:\.\d+)?B)", model).group(1)
+    return re.search(r"(\d+(?:\.\d+)?B)", model, re.I).group(1).upper()
 
 
 def _label(r):
@@ -39,6 +40,8 @@ def _label(r):
     t = c.get("train")
     if not t:
         return f"{_size(c['model'])} {'few shot (3)' if c['prompt'].get('shots') else 'zero shot'}"
+    if t["method"] == "grpo":
+        return f"{_size(c['model'])} SFT LoRA + GRPO ({t['reward']} reward)"
     rank = r["train"]["config"]["train"]["rank"] if r["train"] else t["rank"]
     name = {"qlora": "QLoRA", "lora": "LoRA (bf16)", "dora": "DoRA (4 bit base)", "full": "full fine tune"}[t["method"]]
     if t["method"] == "full":

@@ -1,0 +1,9 @@
+# GRPO arm B (docs/plans/grpo.md). Trained by `python -m querycraft.grpo_train configs/local/11_qwen1.5b_lora_r16.yaml binary`,
+# evaluated by `python -m querycraft.run_eval` with this file. Base = the SFT LoRA r16 merged; checkpoints are LoRA on top.
+inherit: ../local/11_qwen1.5b_lora_r16.yaml
+name: qwen1.5b_grpo_binary
+model: runs/qwen1.5b_lora_r16/grpo/sft_merged
+train:
+  method: grpo
+  reward: binary
+  select_steps: [25, 50, 75, 100, 125]
