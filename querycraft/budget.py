@@ -3,7 +3,11 @@ so no run is ever cut off halfway by an empty balance (which would force a mid r
 
 Each rented config declares `budget_hours`: worst case A100 hours for train + eval. Once real jobs have run,
 estimates are scaled up (never down) by how much slower reality was than the declared numbers.
-Spend is counted per billing cycle (Modal's free $30 renews monthly from the signup day).
+Spend is counted per billing cycle (Modal's free $30 renews on the 1st; the dashboard shows Nov 1 to Nov 30).
+
+allow_partial: the workspace spend limit is $0, so Modal stops all jobs when credit runs out instead of charging.
+With that hard stop, a job may start whenever an hour of credit is left; if it is stopped, it resumes from its
+last checkpoint next cycle. Never use it without the $0 spend limit.
 """
 import json
 from datetime import date
@@ -11,7 +15,8 @@ from pathlib import Path
 
 RATE_PER_H = 3.00   # Modal A100 80GB $2.50/h + 4 CPU cores $0.19/h + 32 GiB memory $0.26/h, rounded up
 CAP_USD = 27.0      # $30 monthly free credit minus $3 for image build, data download and CPU jobs
-CYCLE_DAY = 12      # signup day of month: the free credit renews on this day
+CYCLE_DAY = 1       # Modal billing cycles are calendar months
+CREDIT_USD = 30.0   # the whole monthly credit; the cap when Modal's $0 spend limit is the backstop
 
 
 def cycle_start(today=None):
@@ -43,6 +48,8 @@ def slowdown(rows):
     return max(1.0, sum(r["actual_h"] for r in rows) / d) if d else 1.0
 
 
-def can_start(rows, declared_h, cap=CAP_USD, today=None):
+def can_start(rows, declared_h, cap=CAP_USD, today=None, allow_partial=False):
     worst = round(declared_h * slowdown(rows) * RATE_PER_H, 2)
+    if allow_partial:
+        return spent(rows, today) + RATE_PER_H <= CREDIT_USD, worst
     return spent(rows, today) + worst <= cap, worst

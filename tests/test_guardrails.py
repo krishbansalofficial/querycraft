@@ -21,11 +21,21 @@ def test_budget_blocks_job_that_could_overrun(tmp_path):
 
 def test_budget_resets_each_cycle(tmp_path):
     led = tmp_path / "ledger.json"
-    budget.record(led, "a", 8.0, 8.0, today=date(2026, 11, 13))      # $24 in the Nov 12 cycle
+    budget.record(led, "a", 8.0, 8.0, today=date(2026, 11, 13))      # $24 in the November cycle
     rows = budget.load(led)
-    assert not budget.can_start(rows, 2.0, today=date(2026, 12, 11))[0]   # still Nov cycle
-    assert budget.can_start(rows, 2.0, today=date(2026, 12, 12))[0]       # Dec cycle: fresh $27
-    assert budget.cycle_start(date(2027, 1, 3)) == date(2026, 12, 12)
+    assert not budget.can_start(rows, 2.0, today=date(2026, 11, 30))[0]   # still November
+    assert budget.can_start(rows, 2.0, today=date(2026, 12, 1))[0]        # December: fresh $27
+    assert budget.cycle_start(date(2027, 1, 3)) == date(2027, 1, 1)
+
+
+def test_allow_partial_needs_only_an_hour_of_credit(tmp_path):
+    led = tmp_path / "ledger.json"
+    budget.record(led, "a", 6.0, 6.0, today=D)                          # $18 spent
+    rows = budget.load(led)
+    assert not budget.can_start(rows, 5.0, today=D)[0]                  # $15 worst case: blocked normally
+    assert budget.can_start(rows, 5.0, today=D, allow_partial=True)[0]  # $3 hour fits under $30
+    budget.record(led, "b", 3.5, 3.5, today=D)                          # $28.50 spent
+    assert not budget.can_start(budget.load(led), 5.0, today=D, allow_partial=True)[0]
 
 
 def test_layout_guard_refuses_changed_batch(tmp_path):

@@ -79,7 +79,7 @@ def smoke_job(cfg, runs, git):
 
 
 @app.function(cpu=0.25, memory=1024, timeout=24 * 3600)
-def queue(smoke, dry_run, git):
+def queue(smoke, dry_run, git, allow_partial=False):
     """The job loop runs on Modal (a few cents of CPU), so it survives the laptop sleeping."""
     import sys
     sys.path.insert(0, "/root/querycraft")
@@ -101,9 +101,10 @@ def queue(smoke, dry_run, git):
         if missing:
             print(f"wait     {name}: needs {missing} first")
             continue
-        ok, worst = budget.can_start(rows, cfg.get("budget_hours", 0.3))
+        ok, worst = budget.can_start(rows, cfg.get("budget_hours", 0.3), allow_partial=allow_partial)
         if not ok:
-            print(f"defer    {name}: worst case ${worst} + spent ${budget.spent(rows)} > cap ${budget.CAP_USD}")
+            print(f"defer    {name}: worst case ${worst} + spent ${budget.spent(rows)} > cap "
+                  f"${budget.CREDIT_USD if allow_partial else budget.CAP_USD}")
             continue
         print(f"{'would run' if dry_run else 'run'}  {name}: worst case ${worst}, spent so far ${budget.spent(rows)}")
         if dry_run:
@@ -121,8 +122,9 @@ def queue(smoke, dry_run, git):
 
 
 @app.local_entrypoint()
-def main(smoke: bool = False, dry_run: bool = False):
+def main(smoke: bool = False, dry_run: bool = False, allow_partial: bool = False):
+    """--allow-partial: only with the workspace spend limit at $0 (see querycraft/budget.py)."""
     git = subprocess.check_output(["git", "-C", str(REPO), "rev-parse", "HEAD"], text=True).strip()
     if subprocess.check_output(["git", "-C", str(REPO), "status", "--porcelain", "--untracked-files=no"], text=True):
         git += "-dirty"
-    queue.remote(smoke, dry_run, git)  # use `modal run --detach` so it keeps going after this terminal closes
+    queue.remote(smoke, dry_run, git, allow_partial)  # use `modal run --detach` so it keeps going after this terminal closes
