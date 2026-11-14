@@ -78,6 +78,18 @@ def smoke_job(cfg, runs, git):
     _job(cfg, runs, git)
 
 
+def _wait(call_id):
+    """A single blocking .remote() died after ~1.5 h with 'AuthError: Jwt is expired', which cancelled the job.
+    Poll the spawned call in 10 minute slices instead, re-fetching it (fresh token) on every slice."""
+    while True:
+        try:
+            return modal.FunctionCall.from_id(call_id).get(timeout=600)
+        except (TimeoutError, modal.exception.TimeoutError, modal.exception.AuthError) as ex:
+            if isinstance(ex, modal.exception.FunctionTimeoutError):
+                raise  # the job itself hit its 10 h limit
+            continue  # job still running; a job's own failure is any other exception and propagates
+
+
 @app.function(cpu=0.25, memory=1024, timeout=24 * 3600)
 def queue(smoke, dry_run, git, allow_partial=False):
     """The job loop runs on Modal (a few cents of CPU), so it survives the laptop sleeping."""
@@ -111,7 +123,7 @@ def queue(smoke, dry_run, git, allow_partial=False):
             continue
         t0 = time.time()
         try:
-            fn.remote(f"configs/{profile}/{f}", runs, git)
+            _wait(fn.spawn(f"configs/{profile}/{f}", runs, git).object_id)
             done.add(name)
         except Exception as e:  # a failed job is logged and skipped so the rest of the queue still runs
             print(f"FAILED   {name}: {e}")
