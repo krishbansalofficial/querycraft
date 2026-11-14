@@ -1,0 +1,100 @@
+[
+ {
+  "name": "smoke_zeroshot",
+  "date": "2026-11-12",
+  "declared_h": 0.3,
+  "actual_h": 0.131,
+  "usd": 0.39
+ },
+ {
+  "name": "smoke_qlora_r8",
+  "date": "2026-11-12",
+  "declared_h": 0.3,
+  "actual_h": 0.057,
+  "usd": 0.17
+ },
+ {
+  "name": "smoke_qlora_r16",
+  "date": "2026-11-12",
+  "declared_h": 0.3,
+  "actual_h": 0.047,
+  "usd": 0.14
+ },
+ {
+  "name": "smoke_dora_best",
+  "date": "2026-11-12",
+  "declared_h": 0.3,
+  "actual_h": 0.061,
+  "usd": 0.18
+ },
+ {
+  "name": "smoke_full",
+  "date": "2026-11-12",
+  "declared_h": 0.3,
+  "actual_h": 0.057,
+  "usd": 0.17
+ },
+ {
+  "name": "qwen1.5b_full",
+  "date": "2026-11-13",
+  "declared_h": 1.2,
+  "actual_h": 0.762,
+  "usd": 2.29
+ },
+ {
+  "name": "qwen7b_zeroshot",
+  "date": "2026-11-13",
+  "declared_h": 0.4,
+  "actual_h": 0.127,
+  "usd": 0.38
+ },
+ {
+  "name": "qwen7b_qlora_r16",
+  "date": "2026-11-13",
+  "declared_h": 2.6,
+  "actual_h": 1.622,
+  "usd": 4.87
+ },
+ {
+  "name": "qwen7b_qlora_r8",
+  "date": "2026-11-13",
+  "declared_h": 2.6,
+  "actual_h": 1.591,
+  "usd": 4.77
+ },
+ {
+  "name": "qwen7b_qlora_r64",
+  "date": "2026-11-13",
+  "declared_h": 2.8,
+  "actual_h": 1.606,
+  "usd": 4.82
+ },
+ {
+  "name": "qwen7b_fewshot3",
+  "date": "2026-11-13",
+  "declared_h": 0.4,
+  "actual_h": 0.083,
+  "usd": 0.25
+ },
+ {
+  "name": "qwen7b_dora_best",
+  "date": "2026-11-13",
+  "declared_h": 5.0,
+  "actual_h": 0.646,
+  "usd": 1.94
+ },
+ {
+  "name": "qwen7b_dora_best",
+  "date": "2026-11-14",
+  "declared_h": 5.0,
+  "actual_h": 1.61,
+  "usd": 4.83
+ },
+ {
+  "name": "qwen7b_dora_best",
+  "date": "2026-11-14",
+  "declared_h": 5.0,
+  "actual_h": 1.402,
+  "usd": 4.21
+ }
+]

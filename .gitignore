@@ -8,4 +8,4 @@ wandb/
 *.schema3.json
 session_logs/
 runs_probe
-modal_ledger.json
+/modal_ledger.json

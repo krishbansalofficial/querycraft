@@ -1,6 +1,7 @@
 """Build README result tables + plots strictly from logged runs (runs/*/results.json and *_meta.json).
 Planned runs without results are listed under "Targets (not yet measured)"; nothing is ever filled in by hand."""
 import json
+import math
 import re
 from pathlib import Path
 
@@ -64,6 +65,23 @@ def _dev_on_held_dbs(r):
     return round(100 * sum(xs) / len(xs), 2) if xs else None
 
 
+def _ex_by_id(r):
+    p = r["dir"] / "eval" / f"dev_{r['res'].get('selected_checkpoint', 'base')}.scored.jsonl"
+    return {(d := json.loads(l))["id"]: d["ex"] for l in p.read_text().splitlines()}
+
+
+def _paired(a, b):
+    """(only a right, only b right) over the dev questions both runs scored."""
+    xa, xb = _ex_by_id(a), _ex_by_id(b)
+    ids = xa.keys() & xb.keys()
+    return sum(xa[i] and not xb[i] for i in ids), sum(xb[i] and not xa[i] for i in ids)
+
+
+def _sign_p(a, b):
+    n, k = a + b, min(a, b)
+    return round(min(1.0, 2 * sum(math.comb(n, i) for i in range(k + 1)) / 2 ** n), 3) if n else 1.0
+
+
 def tables(rows):
     done = [r for r in rows if r["res"] and r["eval"] and r["eval"].get("status") == "ok"]
     todo = [r for r in rows if r not in done]
@@ -95,15 +113,29 @@ def tables(rows):
         sel = [r for r in done if "val_ex_by_checkpoint" in r["res"]]
         if sel:
             out.append("### Checkpoint selection on validation (EX %, chosen in bold)\n")
-            out.append("| Model | " + " | ".join(sel[0]["res"]["val_ex_by_checkpoint"]) + " | Trainable params | Peak VRAM (GB) |")
-            out.append("|---|" + "---|" * (len(sel[0]["res"]["val_ex_by_checkpoint"]) + 2))
-            for r in sel:
-                v = r["res"]["val_ex_by_checkpoint"]
-                cells = [f"**{x}**" if k == r["res"]["selected_checkpoint"] else str(x) for k, x in v.items()]
-                tp = r["train"].get("trainable_params") if r["train"] else None
-                out.append(f"| {_label(r)} | " + " | ".join(cells) + f" | {tp or 'all'} | {r['train'].get('peak_vram_gb', '') if r['train'] else ''} |")
+            for keys in dict.fromkeys(tuple(r["res"]["val_ex_by_checkpoint"]) for r in sel):  # SFT and GRPO save at different steps
+                out.append("| Model | " + " | ".join(keys) + " | Trainable params | Peak VRAM (GB) |")
+                out.append("|---|" + "---|" * (len(keys) + 2))
+                for r in (r for r in sel if tuple(r["res"]["val_ex_by_checkpoint"]) == keys):
+                    v = r["res"]["val_ex_by_checkpoint"]
+                    cells = [f"**{x}**" if k == r["res"]["selected_checkpoint"] else str(x) for k, x in v.items()]
+                    tp = r["train"].get("trainable_params") if r["train"] else None
+                    out.append(f"| {_label(r)} | " + " | ".join(cells) + f" | {tp or 'all'} | {r['train'].get('peak_vram_gb', '') if r['train'] else ''} |")
+                out.append("")
+        grpo = [r for r in done if (r["cfg"].get("train") or {}).get("method") == "grpo"]
+        if grpo:
+            out.append("### GRPO on top of SFT, paired against its SFT parent (BIRD dev)\n")
+            out.append("Both arms start from the 1.5B LoRA r16 SFT checkpoint and train 125 steps on 1,000 prompts the "
+                       "SFT model solves 1 to 7 times out of 8. p is an exact two sided sign test on the questions "
+                       "where exactly one of the two models is right.\n")
+            out.append("| Model | SFT parent EX | GRPO EX | Only GRPO right | Only SFT right | p |")
+            out.append("|---|---|---|---|---|---|")
+            for r in grpo:
+                parent = next(x for x in done if x["cfg"]["name"] == Path(r["cfg"]["model"]).parent.parent.name)
+                a, b = _paired(parent, r)
+                out.append(f"| {_label(r)} | {parent['res']['dev']['ex']} | {r['res']['dev']['ex']} | {b} | {a} | {_sign_p(a, b)} |")
             out.append("")
-        conf = [(r, json.loads(f.read_text())) for r in done if (f := r["dir"] / "confidence" / "confidence.json").exists()]
+        conf =[(r, json.loads(f.read_text())) for r in done if (f := r["dir"] / "confidence" / "confidence.json").exists()]
         if conf:
             out.append("### Knowing when it is wrong: voting and abstention (BIRD dev)\n")
             out.append("8 sampled queries per question are executed and grouped by result; the largest group is the "
@@ -169,6 +201,25 @@ def plots(done):
         fig.tight_layout()
         fig.savefig(FIG / "accuracy_vs_coverage.png", dpi=130)
         made.append("accuracy_vs_coverage.png")
+    grpo = [r for r in done if (r["cfg"].get("train") or {}).get("method") == "grpo" and (r["dir"] / "train_log.json").exists()]
+    if grpo:  # reward hacking check: does the trained reward rise without execution correctness rising with it?
+        fig, ax = plt.subplots(figsize=(6, 4))
+        for r in grpo:
+            arm = r["cfg"]["train"]["reward"]
+            log = [x for x in json.loads((r["dir"] / "train_log.json").read_text()) if "reward" in x]
+            for key, style in ((f"rewards/{arm}_reward/mean", "-"), ("rewards/binary_reward/mean", ":")):
+                ys = [x[key] for x in log if key in x]
+                if arm == "binary" and style == ":":
+                    continue  # same series as the trained reward
+                ys = [sum(ys[max(0, i - 9):i + 1]) / len(ys[max(0, i - 9):i + 1]) for i in range(len(ys))]
+                ax.plot(range(1, len(ys) + 1), ys, style, label=f"{arm} arm: {key.split('/')[1].replace('_', ' ')}")
+        ax.set_xlabel("GRPO step")
+        ax.set_ylabel("Mean train reward (10 step moving average)")
+        ax.set_title("Trained reward vs execution correctness")
+        ax.legend(fontsize=7)
+        fig.tight_layout()
+        fig.savefig(FIG / "grpo_rewards.png", dpi=130)
+        made.append("grpo_rewards.png")
     return made
 
 

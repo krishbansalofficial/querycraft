@@ -1,8 +1,8 @@
 # Plan: reinforcement learning with an execution reward (GRPO)
 
-Status: in progress on the laptop. Step 1 done (`querycraft/reward.py`, `tests/test_reward.py`); step 2 running
-(`querycraft/grpo_data.py`); step 3 written (`querycraft/grpo_train.py`). Nothing here runs on Modal until the
-1.5B result justifies it.
+Status: done on the laptop (2026-11-14). Both arms trained 125 steps and were evaluated; neither beat the SFT
+model on BIRD dev by more than noise (paired sign test p = 0.49 binary, 0.94 shaped). Results and the reward hacking
+plot are in the README. Per step 6, the 7B arms are not run: the 1.5B result does not justify them.
 
 ## Question
 

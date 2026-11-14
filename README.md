@@ -80,7 +80,10 @@ columns per database), so the task tests schema understanding as much as SQL syn
 | 7B QLoRA r8 | 56.4 | 51.69 [49.19, 54.19] | 57.63 | 59.03 | 43.75 | 30.34 | 82.0 | 62.47 | 84.76 | 84.44 | NVIDIA A100-SXM4-80GB x1 | 1.45 h |
 | 7B QLoRA r16 | 56.0 | 52.15 [49.65, 54.64] | 57.95 | 59.35 | 44.83 | 29.66 | 84.0 | 63.77 | 84.15 | 83.66 | NVIDIA A100-SXM4-80GB x1 | 1.46 h |
 | 7B QLoRA r64 | 56.0 | 52.67 [50.17, 55.16] | 58.15 | 59.14 | 45.91 | 33.1 | 83.0 | 62.47 | 83.54 | 82.88 | NVIDIA A100-SXM4-80GB x1 | 1.47 h |
+| 7B DoRA (4 bit base) r8 | 56.4 | 51.69 [49.19, 54.19] | 57.76 | 59.14 | 43.32 | 31.03 | 83.0 | 62.69 | 85.98 | 84.44 | NVIDIA A100-SXM4-80GB x1 | 1.09 h |
 | 1.5B full fine tune | 36.2 | 42.76 [40.31, 45.25] | 47.52 | 49.95 | 34.27 | 24.14 | 65.0 | 54.01 | 34.15 | 52.14 | NVIDIA A100-SXM4-80GB x1 | 0.48 h |
+| 1.5B SFT LoRA + GRPO (binary reward) | 35.2 | 44.52 [42.05, 47.02] | 48.83 | 52.11 | 34.27 | 28.97 | 73.0 | 55.75 | 71.34 | 68.09 | NVIDIA GeForce RTX 4070 Laptop GPU x1 | 4.07 h |
+| 1.5B SFT LoRA + GRPO (shaped reward) | 35.8 | 44.07 [41.6, 46.56] | 48.04 | 51.78 | 33.41 | 28.97 | 73.0 | 54.66 | 68.29 | 67.7 | NVIDIA GeForce RTX 4070 Laptop GPU x1 | 14.62 h |
 
 Held back EX vs dev EX on the same three databases is the contamination check: a model that memorised BIRD dev would score clearly higher on dev questions than on new questions over the same schemas.
 
@@ -97,7 +100,10 @@ Held back EX vs dev EX on the same three databases is the contamination check: a
 | 7B QLoRA r8 | 1 | 192 | 162 | 170 | 74 | 0 | 142 |
 | 7B QLoRA r16 | 1 | 203 | 161 | 155 | 74 | 0 | 140 |
 | 7B QLoRA r64 | 2 | 197 | 157 | 153 | 76 | 0 | 141 |
+| 7B DoRA (4 bit base) r8 | 1 | 201 | 155 | 164 | 77 | 0 | 143 |
 | 1.5B full fine tune | 8 | 244 | 247 | 167 | 83 | 1 | 128 |
+| 1.5B SFT LoRA + GRPO (binary reward) | 3 | 263 | 239 | 166 | 71 | 0 | 109 |
+| 1.5B SFT LoRA + GRPO (shaped reward) | 2 | 235 | 276 | 165 | 68 | 0 | 112 |
 
 ### Checkpoint selection on validation (EX %, chosen in bold)
 
@@ -108,7 +114,22 @@ Held back EX vs dev EX on the same three databases is the contamination check: a
 | 7B QLoRA r8 | 54.6 | 56.0 | **56.4** | 20185088 | 13.72 |
 | 7B QLoRA r16 | 54.0 | 55.4 | **56.0** | 40370176 | 13.83 |
 | 7B QLoRA r64 | 52.0 | 54.6 | **56.0** | 161480704 | 14.74 |
+| 7B DoRA (4 bit base) r8 | 54.4 | 54.6 | **56.4** | 21575680 | 16.93 |
 | 1.5B full fine tune | 33.4 | 34.0 | **36.2** | all | 26.95 |
+
+| Model | checkpoint-25 | checkpoint-50 | checkpoint-75 | checkpoint-100 | checkpoint-125 | Trainable params | Peak VRAM (GB) |
+|---|---|---|---|---|---|---|---|
+| 1.5B SFT LoRA + GRPO (binary reward) | 32.8 | 33.4 | 34.0 | 34.0 | **35.2** | 18464768 | 6.62 |
+| 1.5B SFT LoRA + GRPO (shaped reward) | 32.8 | 34.0 | 34.0 | 34.6 | **35.8** | 18464768 | 6.48 |
+
+### GRPO on top of SFT, paired against its SFT parent (BIRD dev)
+
+Both arms start from the 1.5B LoRA r16 SFT checkpoint and train 125 steps on 1,000 prompts the SFT model solves 1 to 7 times out of 8. p is an exact two sided sign test on the questions where exactly one of the two models is right.
+
+| Model | SFT parent EX | GRPO EX | Only GRPO right | Only SFT right | p |
+|---|---|---|---|---|---|
+| 1.5B SFT LoRA + GRPO (binary reward) | 43.94 | 44.52 | 73 | 64 | 0.494 |
+| 1.5B SFT LoRA + GRPO (shaped reward) | 43.94 | 44.07 | 81 | 79 | 0.937 |
 
 ### Knowing when it is wrong: voting and abstention (BIRD dev)
 
@@ -120,28 +141,39 @@ Held back EX vs dev EX on the same three databases is the contamination check: a
 | 1.5B QLoRA r16 | 42.31 | 45.6 | 0.7494 | 56.03% | 61.23 | 85.91% | 51.03 | 87.14 (70.0% answered) |
 | 1.5B LoRA (bf16) r16 | 43.94 | 48.53 | 0.7411 | 56.49% | 64.09 | 81.41% | 55.29 | 90.77 (65.0% answered) |
 
-### Targets (not yet measured)
-
-These runs are configured but have no logged results yet. No numbers are reported for them.
-
-* 7B DoRA (4 bit base) at best sweep rank (`configs/rented/20_qwen7b_dora_best.yaml`, A100 80GB)
-
 ![dev_ex_by_difficulty.png](docs/figures/dev_ex_by_difficulty.png)
 ![learn_vs_forget.png](docs/figures/learn_vs_forget.png)
 ![accuracy_vs_coverage.png](docs/figures/accuracy_vs_coverage.png)
+![grpo_rewards.png](docs/figures/grpo_rewards.png)
 <!-- RESULTS:END -->
+
+### What GRPO showed
+
+* Train reward climbed steadily (binary arm: mean 0.46 over the first 25 steps, 0.69 over the last 25), yet BIRD dev barely moved:
+  +0.58 points for the binary reward and +0.13 for the shaped reward, neither distinguishable from noise in the
+  paired test above (p = 0.49 and 0.94). Held back EX went from 68 to 73 for both arms, on only 100 questions.
+* The shaped reward was not hacked: in the plot, the shaped arm's true correctness (dotted) tracks the binary arm
+  step for step, so partial credit for the right tables and joins did not pull the model away from correct answers.
+  It also did not help.
+* In the binary arm, from the first 25 steps to the last 25, the share of prompts where all 8 samples got the same reward rose from 0.17 to 0.43 and entropy
+  fell from 0.16 to 0.06. That is consistent with the model sharpening on answers it could already sometimes reach,
+  rather than learning new skills, which matches the small dev change.
+* No meaningful forgetting: HumanEval and MBPP stayed within a point of the SFT model or above it.
+* The shaped arm's 14.6 h train time includes the hours the laptop was asleep overnight; it is not a compute
+  comparison with the binary arm.
 
 ## Hardware
 
 | Runs | Hardware |
 |---|---|
-| data, tests, 1.5B baselines, 1.5B QLoRA and LoRA, smoke test | Lenovo Legion Pro 5, RTX 4070 Laptop 8 GB, WSL2 Ubuntu 24.04, driver 560.94 |
+| data, tests, 1.5B baselines, 1.5B QLoRA and LoRA, GRPO, smoke test | Lenovo Legion Pro 5, RTX 4070 Laptop 8 GB, WSL2 Ubuntu 24.04, driver 560.94 |
 | 7B baselines, 7B rank sweep, 7B DoRA, 1.5B full fine tune | 1x A100 SXM4 80GB on Modal, free monthly credit |
 
 The exact GPU, package versions, git commit, seed, config and wall clock of every stage are written to
-`runs/<name>/<stage>_meta.json`. Every A100 job's measured hours and cost are in `docs/modal_ledger.json`: the
-sweep, both 7B baselines and the 1.5B full fine tune used 7.8 A100 hours and $18.43 of the $30 monthly credit
-(including the smoke test). DoRA needs up to $15 more, so the spend cap deferred it to the next credit cycle.
+`runs/<name>/<stage>_meta.json`. Every A100 job's measured hours and cost are in `docs/modal_ledger.json`:
+9.8 A100 hours and $29.41 at the ledger's conservative $3 per hour, inside the $30 monthly free credit (including
+the smoke test). DoRA appears three times because two attempts were cut off by the launcher, not the job, and each
+retry resumed from the last saved checkpoint.
 
 ## Reproduce
 

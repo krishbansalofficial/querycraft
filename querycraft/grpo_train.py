@@ -75,7 +75,8 @@ def main(cfg_path, arm, max_steps=STEPS):
         (run_dir(cfg) / "train_log.json").write_text(json.dumps(hist, indent=1))
         steps = [h for h in hist if "step_time" in h or "reward" in h]
         meta |= {"n_prompts": len(ds), "resumed": resume, "base": str(src),
-                 "peak_vram_gb": round(torch.cuda.max_memory_allocated() / 2**30, 2), "n_logged_steps": len(steps)}
+                 "peak_vram_gb": round(torch.cuda.max_memory_allocated() / 2**30, 2), "n_logged_steps": len(steps),
+                 "trainable_params": trainer.model.get_nb_trainable_parameters()[0]}
 
 
 if __name__ == "__main__":
