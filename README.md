@@ -17,7 +17,7 @@ columns per database), so the task tests schema understanding as much as SQL syn
 | train | see `data/processed/split_stats.json` | BIRD train minus validation databases | training only |
 | val | 500 | whole BIRD train databases held out of training | every choice: checkpoints, prompts, DoRA rank |
 | dev | 1,534 | BIRD dev (11 unseen databases) | final reporting only, never for selection |
-| held back | 100 | written for this project on 3 BIRD dev databases | final reporting, contamination check |
+| held back | 100 | AI drafted for this project on 3 BIRD dev databases; every gold query validated by execution, not yet human reviewed | final reporting, contamination check |
 
 * **Validation is database disjoint from train**, like BIRD dev. Splitting rows instead would let validation share
   schemas with training and overstate how well a checkpoint generalises.
@@ -200,7 +200,7 @@ querycraft/   data.py (splits, leakage check)  schema.py (serializer, pruning)  
               train.py (training only)  infer.py (vLLM inference only)  evaluate.py + execution.py (scoring only)
               run_eval.py (selection on val, then dev)  forgetting.py  report.py
 configs/      base.yaml, train.yaml, local/, rented/, smoke/
-data/heldback the 100 project written questions (draft.py validates every gold query)
+data/heldback the 100 AI drafted questions (draft.py validates every gold query by execution)
 tests/        harness, split + leakage, schema
 ```
 
@@ -233,3 +233,8 @@ tests/        harness, split + leakage, schema
   (`querycraft/budget.py`) that only starts a job if its worst case cost still fits.
 * **BIRD archive layout.** The train archive ships macOS `__MACOSX` resource fork files that mirror every database
   path. A naive path search picked them first, so validation pointed at non databases. The loader now skips them.
+
+## License
+
+Code: MIT (`LICENSE`). Held back questions: CC BY-SA 4.0 (`data/heldback/LICENSE`), matching BIRD's license.
+BIRD itself is not included; `scripts/download_bird.sh` fetches it from its authors.

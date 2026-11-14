@@ -1,0 +1,7 @@
+The held back questions in this directory (heldback.json) are licensed under the
+Creative Commons Attribution-ShareAlike 4.0 International License (CC BY-SA 4.0):
+https://creativecommons.org/licenses/by-sa/4.0/
+
+They are written over three BIRD dev databases (superhero, student_club, formula_1).
+BIRD is also distributed under CC BY-SA 4.0: https://bird-bench.github.io/
+The code in this directory (draft.py) is under the repository's MIT license.
