@@ -41,6 +41,8 @@ def _label(r):
     t = c.get("train")
     if c["prompt"].get("linking") == "oracle":
         return f"{_size(c['model'])} SFT LoRA, oracle tables (upper bound)"
+    if c["prompt"].get("linking") == "selector":
+        return f"{_size(c['model'])} SFT LoRA, trained table selector (2 pass)"
     if c["prompt"].get("linking") == "self":
         return f"{_size(c['model'])} SFT LoRA, self linked tables (2 pass)"
     if not t:

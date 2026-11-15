@@ -11,6 +11,11 @@ SYSTEM = ("You are an expert SQLite engineer. Given a database schema, optional 
           "question, write one SQLite query that answers the question. Reply with only the SQL query.")
 
 
+LINK_SYSTEM = ("You are an expert SQLite engineer. Given a database schema, optional external knowledge and a "
+               "question, list the tables a SQLite query answering the question needs. Reply with only the table "
+               "names, comma separated.")
+
+
 def user_message(schema_text, question, evidence):
     return (f"Database schema:\n{schema_text}\n\n"
             f"External knowledge: {evidence.strip() or 'None'}\n\n"
@@ -33,8 +38,10 @@ class PromptBuilder:
         if not pruned:
             return serialize(tables)
         if self.linking:  # same pruner and token budget, applied to the linked tables only
-            # oracle: the gold SQL's tables (upper bound). self: a first pass prediction's tables + one foreign key hop
-            used = gold_tables(ex["sql"]) if self.linking == "oracle" else fk_hop(tables, gold_tables(ex["link_sql"]))
+            # oracle: the gold SQL's tables (upper bound). self: a first pass prediction's tables + one foreign key hop.
+            # selector: a trained table selector's list, no hop (precision is the point; fixed before any eval)
+            used = (gold_tables(ex["sql"]) if self.linking == "oracle" else
+                    fk_hop(tables, gold_tables(ex["link_sql"])) if self.linking == "self" else set(ex["link_tables"]))
             tables = [t for t in tables if t["name"].lower() in used] or tables
         keep, bare = prune(tables, ex["question"], ex.get("evidence", ""), self.n_tokens, self.budget)
         return serialize(tables, keep, bare)
@@ -46,16 +53,16 @@ class PromptBuilder:
         keep = {t["name"]: {c["name"] for c in t["columns"]} for t in tables if t["name"].lower() in used}
         return serialize(tables, keep or None)
 
-    def messages(self, ex, pruned=True):
-        msgs = [{"role": "system", "content": SYSTEM}]
+    def messages(self, ex, pruned=True, system=SYSTEM):
+        msgs = [{"role": "system", "content": system}]
         for s in self.shots:
             msgs.append({"role": "user", "content": user_message(self._shot_schema(s), s["question"], s.get("evidence", ""))})
             msgs.append({"role": "assistant", "content": s["sql"]})
         msgs.append({"role": "user", "content": user_message(self.schema_text(ex, pruned), ex["question"], ex.get("evidence", ""))})
         return msgs
 
-    def prompt_text(self, ex, pruned=True):
-        return self.tok.apply_chat_template(self.messages(ex, pruned), tokenize=False, add_generation_prompt=True)
+    def prompt_text(self, ex, pruned=True, system=SYSTEM):
+        return self.tok.apply_chat_template(self.messages(ex, pruned, system), tokenize=False, add_generation_prompt=True)
 
 
 def fk_hop(tables, names):

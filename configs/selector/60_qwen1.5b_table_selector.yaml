@@ -1,0 +1,7 @@
+# Schema linking step 3 (docs/plans/schema_linking.md): LoRA r16 on the 1.5B base, same recipe as the SFT model,
+# but the target is the gold SQL's table list. Kept outside configs/l*,r*,g* because it is scored by set metrics
+# (querycraft.linker), not execution accuracy.
+inherit: ../local/11_qwen1.5b_lora_r16.yaml
+name: qwen1.5b_table_selector
+train:
+  target: tables

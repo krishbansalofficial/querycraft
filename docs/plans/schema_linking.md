@@ -1,6 +1,6 @@
 # Plan: schema linking (pick the tables before writing the SQL)
 
-Status: step 1 passed the gate; self linking (no training) evaluated; trained selector (step 3) next.
+Status: done (2026-11-14). The oracle shows 4.6 dev points are available; neither self linking nor a trained selector captures them. Step 4 (retraining the SQL model on linked prompts) is not run: see step 3's result.
 
 ## Step 1 result: oracle upper bound
 
@@ -19,6 +19,29 @@ Result: val 33.6 to 36.6, dev 43.94 to 44.46 (39 newly right, 31 newly wrong, p 
 (8 newly right, 0 newly wrong, p = 0.008). Wrong table errors on dev do not fall (241 to 244): the first pass's own
 mistakes stay in the schema. Dev databases average 7 tables, so removing about 2 changes little; the oracle gains by
 showing about 2 tables. A selector needs much higher precision than the first pass, which is what step 3 trains for.
+
+## Step 3 result: trained table selector
+
+LoRA r16 on the 1.5B base, same recipe as the SFT model, trained to list the gold SQL's tables
+(`configs/selector/60_*`, `querycraft/linker.py`). Checkpoint 560 chosen by val exact set match.
+
+| Split | Recall | Precision | Exact set | Every gold table kept | Tables listed |
+|---|---|---|---|---|---|
+| val | 0.827 | 0.847 | 0.596 | 0.710 | 1.92 |
+| dev | 0.889 | 0.908 | 0.733 | 0.823 | 1.91 |
+| held back | 0.862 | 0.948 | 0.750 | 0.780 | 1.72 |
+
+The SQL model over only those tables (`configs/linking/52_*`, no foreign key hop): val 33.6 to 34.4, dev 43.94 to
+44.72 (97 newly right, 85 newly wrong, p = 0.42), held back 68 to 63 (p = 0.27). Wrong table errors on dev do not
+fall (241 to 250).
+
+The selector is precise but drops a needed table for 18% of dev questions, and every such question is lost. The
+oracle keeps every gold table by construction. Retraining the SQL model on linked prompts (step 4) cannot recover a
+table the selector dropped, so it is not run. What would: a selector tuned for recall (list more tables, then let the
+SQL model ignore extras), which is close to what the existing pruner already does.
+
+(The selector's val numbers differ slightly between checkpoint selection and the final pass, 0.592 and 0.596 exact,
+because vLLM batching is not bit for bit deterministic.)
 
 ## Why
 

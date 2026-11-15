@@ -17,6 +17,7 @@
 | 1.5B SFT LoRA + GRPO (shaped reward) | 35.8 | 44.07 [41.6, 46.56] | 48.04 | 51.78 | 33.41 | 28.97 | 73.0 | 54.66 | 68.29 | 67.7 | NVIDIA GeForce RTX 4070 Laptop GPU x1 | 14.62 h |
 | 1.5B SFT LoRA, oracle tables (upper bound) | 45.0 | 48.5 [46.01, 51.0] | 54.17 | 58.49 | 35.34 | 26.9 | 79.0 | 61.61 |  |  |  |  |
 | 1.5B SFT LoRA, self linked tables (2 pass) | 36.6 | 44.46 [41.99, 46.96] | 49.54 | 52.43 | 33.19 | 29.66 | 76.0 | 54.45 |  |  |  |  |
+| 1.5B SFT LoRA, trained table selector (2 pass) | 34.4 | 44.72 [42.25, 47.22] | 49.87 | 54.49 | 31.03 | 26.21 | 63.0 | 55.75 |  |  |  |  |
 
 Held back EX vs dev EX on the same three databases is the contamination check: a model that memorised BIRD dev would score clearly higher on dev questions than on new questions over the same schemas.
 
@@ -39,6 +40,7 @@ Held back EX vs dev EX on the same three databases is the contamination check: a
 | 1.5B SFT LoRA + GRPO (shaped reward) | 2 | 235 | 276 | 165 | 68 | 0 | 112 |
 | 1.5B SFT LoRA, oracle tables (upper bound) | 3 | 116 | 241 | 185 | 90 | 0 | 155 |
 | 1.5B SFT LoRA, self linked tables (2 pass) | 4 | 244 | 254 | 148 | 79 | 0 | 123 |
+| 1.5B SFT LoRA, trained table selector (2 pass) | 10 | 250 | 241 | 131 | 81 | 0 | 135 |
 
 ### Checkpoint selection on validation (EX %, chosen in bold)
 
@@ -81,6 +83,7 @@ GRPO arms start from the 1.5B LoRA r16 SFT checkpoint and train 125 steps on 1,0
 | 1.5B SFT LoRA + GRPO (shaped reward) | 43.94 | 44.07 | 81 | 79 | 0.937 | 68.0 | 73.0 | 7 | 2 | 0.18 |
 | 1.5B SFT LoRA, oracle tables (upper bound) | 43.94 | 48.5 | 134 | 64 | <0.001 | 68.0 | 79.0 | 14 | 3 | 0.013 |
 | 1.5B SFT LoRA, self linked tables (2 pass) | 43.94 | 44.46 | 39 | 31 | 0.403 | 68.0 | 76.0 | 8 | 0 | 0.008 |
+| 1.5B SFT LoRA, trained table selector (2 pass) | 43.94 | 44.72 | 97 | 85 | 0.415 | 68.0 | 63.0 | 4 | 9 | 0.267 |
 
 ### Knowing when it is wrong: voting and abstention (BIRD dev)
 

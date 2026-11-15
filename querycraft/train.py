@@ -14,7 +14,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 from .config import load_config, logged_stage, run_dir
 from .data import load_split
-from .prompts import PromptBuilder
+from .prompts import LINK_SYSTEM, PromptBuilder, gold_tables
 
 
 LAYOUT_KEYS = ("method", "rank", "lr", "max_steps", "per_device_batch", "grad_accum", "max_len", "n_train")
@@ -61,8 +61,12 @@ def build_dataset(cfg, tok):
     pb = PromptBuilder(tok, cfg["prompt"]["schema_budget"])
     recs, dropped = [], 0
     for ex in rows:
-        prompt = pb.messages(ex)
-        completion = [{"role": "assistant", "content": ex["sql"]}]
+        if t.get("target") == "tables":  # table selector for schema linking (docs/plans/schema_linking.md)
+            prompt = pb.messages(ex, system=LINK_SYSTEM)
+            completion = [{"role": "assistant", "content": ", ".join(sorted(gold_tables(ex["sql"])))}]
+        else:
+            prompt = pb.messages(ex)
+            completion = [{"role": "assistant", "content": ex["sql"]}]
         n = pb.n_tokens(tok.apply_chat_template(prompt + completion, tokenize=False))
         if n > t["max_len"]:  # never train on truncated targets
             dropped += 1

@@ -1,0 +1,10 @@
+# Schema linking step 4: the SFT LoRA r16 model (merged, unchanged), second pass over only the tables the trained
+# selector (configs/selector/60_*) lists. No foreign key hop: decided before any evaluation, precision is the point.
+inherit: ../local/01_qwen1.5b_zeroshot.yaml
+name: qwen1.5b_lora_r16_selector
+model: runs/qwen1.5b_lora_r16/grpo/sft_merged
+prompt:
+  linking: selector
+  link_from: runs/qwen1.5b_table_selector/eval/{split}_tables.jsonl
+eval:
+  forgetting: false

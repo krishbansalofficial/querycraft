@@ -79,9 +79,11 @@ def predict(gen: Generator, cfg, split, adapter=None, out_path=None):
     rows = load_split(split)
     if cfg["eval"].get("limit"):
         rows = rows[: cfg["eval"]["limit"]]
-    if cfg["prompt"].get("linking") == "self":  # second pass: link to the tables of a first pass prediction
-        first = {(d := json.loads(l))["id"]: d["pred_sql"] for l in open(cfg["prompt"]["link_from"].format(split=split))}
-        rows = [{**ex, "link_sql": first[ex["id"]]} for ex in rows]
+    if cfg["prompt"].get("linking") in ("self", "selector"):  # second pass over tables picked by a first pass
+        key = "link_sql" if cfg["prompt"]["linking"] == "self" else "link_tables"
+        first = {(d := json.loads(l))["id"]: d.get("pred_sql", d.get("tables"))
+                 for l in open(cfg["prompt"]["link_from"].format(split=split))}
+        rows = [{**ex, key: first[ex["id"]]} for ex in rows]
     pb = PromptBuilder(gen.tok, cfg["prompt"]["schema_budget"], pick_shots(cfg), cfg["prompt"].get("linking"))
     prompts = [pb.prompt_text(ex) for ex in rows]
     raw = gen.generate(prompts, adapter)
