@@ -4,6 +4,26 @@ Fine tuning Qwen2.5 Coder for text to SQL on BIRD, scored by execution accuracy,
 parameter efficient fine tuning: a LoRA rank sweep, DoRA against LoRA at an equal budget, and full fine tuning
 against LoRA, including how much general coding ability each method forgets.
 
+## Findings
+
+Every claim below is backed by a paired test or a confidence interval in [Results](#results).
+
+1. **At 1.5B, supervised fine tuning works.** LoRA r16 lifts BIRD dev execution accuracy from 27.44 to 43.94
+   (320 questions newly right, 67 newly wrong, p < 0.001).
+2. **At 7B, it does not beat zero shot.** The best 7B fine tune (QLoRA r64) scores 52.67 against 51.43 zero shot
+   (p = 0.23), and no 7B run gets below p = 0.23. On the held back set every 7B fine tune scores lower than zero shot
+   (82 to 84 against 88), though with 100 questions none of those drops is significant either. Qwen2.5 Coder 7B
+   Instruct already knows what BIRD's training set teaches at this prompt format.
+3. **Rank and method barely matter.** At 7B, QLoRA r8, r16, r64 and DoRA land within one point of each other with
+   overlapping 95% intervals, while r64 trains 8 times as many parameters as r8.
+4. **Full fine tuning costs general coding ability for no gain.** At 1.5B it matches LoRA on BIRD (42.76 against
+   43.94) but HumanEval drops from 72.56 (base) to 34.15, against 68.9 for LoRA.
+5. **Reinforcement learning with an execution reward (GRPO) did not help**, with either a binary or a shaped reward
+   (p = 0.49 and 0.94 against its SFT starting point), and the shaped reward was not exploited.
+6. **No sign of memorised BIRD dev.** Every model scores higher on the new held back questions than on dev questions
+   over the same three databases, the opposite of what memorisation would produce. The held back questions are
+   probably easier than BIRD's, so this is a one sided check.
+
 ## Problem
 
 Given a natural language question, an optional hint ("external knowledge") and a SQLite database, produce one SQL
@@ -121,6 +141,20 @@ Held back EX vs dev EX on the same three databases is the contamination check: a
 |---|---|---|---|---|---|---|---|
 | 1.5B SFT LoRA + GRPO (binary reward) | 32.8 | 33.4 | 34.0 | 34.0 | **35.2** | 18464768 | 6.62 |
 | 1.5B SFT LoRA + GRPO (shaped reward) | 32.8 | 34.0 | 34.0 | 34.6 | **35.8** | 18464768 | 6.48 |
+
+### Does fine tuning beat zero shot? Paired against the same size zero shot model
+
+p is an exact two sided sign test on the questions where exactly one of the two models is right (dev: 1,534 questions, held back: 100).
+
+| Model | Zero shot dev EX | Dev EX | Only FT right | Only zero shot right | p | Zero shot held back | Held back | Only FT right | Only zero shot right | p |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1.5B QLoRA r16 | 27.44 | 42.31 | 300 | 72 | <0.001 | 61.0 | 66.0 | 14 | 9 | 0.405 |
+| 1.5B LoRA (bf16) r16 | 27.44 | 43.94 | 320 | 67 | <0.001 | 61.0 | 68.0 | 15 | 8 | 0.21 |
+| 7B QLoRA r8 | 51.43 | 51.69 | 115 | 111 | 0.842 | 88.0 | 82.0 | 4 | 10 | 0.18 |
+| 7B QLoRA r16 | 51.43 | 52.15 | 119 | 108 | 0.507 | 88.0 | 84.0 | 4 | 8 | 0.388 |
+| 7B QLoRA r64 | 51.43 | 52.67 | 121 | 102 | 0.228 | 88.0 | 83.0 | 5 | 10 | 0.302 |
+| 7B DoRA (4 bit base) r8 | 51.43 | 51.69 | 114 | 110 | 0.841 | 88.0 | 83.0 | 4 | 9 | 0.267 |
+| 1.5B full fine tune | 27.44 | 42.76 | 323 | 88 | <0.001 | 61.0 | 65.0 | 19 | 15 | 0.608 |
 
 ### GRPO on top of SFT, paired against its SFT parent (BIRD dev)
 

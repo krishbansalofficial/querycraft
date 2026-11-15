@@ -65,20 +65,22 @@ def _dev_on_held_dbs(r):
     return round(100 * sum(xs) / len(xs), 2) if xs else None
 
 
-def _ex_by_id(r):
-    p = r["dir"] / "eval" / f"dev_{r['res'].get('selected_checkpoint', 'base')}.scored.jsonl"
+def _ex_by_id(r, split="dev"):
+    p = r["dir"] / "eval" / f"{split}_{r['res'].get('selected_checkpoint', 'base')}.scored.jsonl"
     return {(d := json.loads(l))["id"]: d["ex"] for l in p.read_text().splitlines()}
 
 
-def _paired(a, b):
-    """(only a right, only b right) over the dev questions both runs scored."""
-    xa, xb = _ex_by_id(a), _ex_by_id(b)
+def _paired(a, b, split="dev"):
+    """(only a right, only b right) over the questions both runs scored."""
+    xa, xb = _ex_by_id(a, split), _ex_by_id(b, split)
     ids = xa.keys() & xb.keys()
     return sum(xa[i] and not xb[i] for i in ids), sum(xb[i] and not xa[i] for i in ids)
 
 
 def _sign_p(a, b):
     n, k = a + b, min(a, b)
+    if n and 2 * sum(math.comb(n, i) for i in range(k + 1)) / 2 ** n < 0.001:
+        return "<0.001"
     return round(min(1.0, 2 * sum(math.comb(n, i) for i in range(k + 1)) / 2 ** n), 3) if n else 1.0
 
 
@@ -122,6 +124,23 @@ def tables(rows):
                     tp = r["train"].get("trainable_params") if r["train"] else None
                     out.append(f"| {_label(r)} | " + " | ".join(cells) + f" | {tp or 'all'} | {r['train'].get('peak_vram_gb', '') if r['train'] else ''} |")
                 out.append("")
+        zs = {_size(r["cfg"]["model"]): r for r in done if not r["cfg"].get("train") and not r["cfg"]["prompt"].get("shots")}
+        ft = [r for r in done if r["cfg"].get("train") and r["cfg"]["train"]["method"] != "grpo" and _size(r["cfg"]["model"]) in zs]
+        if ft:
+            out.append("### Does fine tuning beat zero shot? Paired against the same size zero shot model\n")
+            out.append("p is an exact two sided sign test on the questions where exactly one of the two models is right "
+                       "(dev: 1,534 questions, held back: 100).\n")
+            out.append("| Model | Zero shot dev EX | Dev EX | Only FT right | Only zero shot right | p | "
+                       "Zero shot held back | Held back | Only FT right | Only zero shot right | p |")
+            out.append("|---|---|---|---|---|---|---|---|---|---|---|")
+            for r in ft:
+                z = zs[_size(r["cfg"]["model"])]
+                cells = []
+                for split in ("dev", "heldback"):
+                    a, b = _paired(z, r, split)
+                    cells += [z["res"][split]["ex"], r["res"][split]["ex"], b, a, _sign_p(a, b)]
+                out.append(f"| {_label(r)} | " + " | ".join(map(str, cells)) + " |")
+            out.append("")
         grpo = [r for r in done if (r["cfg"].get("train") or {}).get("method") == "grpo"]
         if grpo:
             out.append("### GRPO on top of SFT, paired against its SFT parent (BIRD dev)\n")
