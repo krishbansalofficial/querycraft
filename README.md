@@ -83,8 +83,9 @@ columns per database), so the task tests schema understanding as much as SQL syn
   is not sure instead of answering.
 * **Demo** (`querycraft/demo.py`). A local web page: pick a BIRD database or upload any SQLite file, ask a
   question, and see the SQL, the rows and whether the model is confident. Databases open read only and the server
-  only listens on localhost. Run `pip install -r requirements-demo.txt`, then
-  `python -u -m querycraft.demo configs/local/11_qwen1.5b_lora_r16.yaml` and open http://127.0.0.1:7860.
+  only listens on localhost. It also shows every run's results. No extra dependencies: the page is one HTML file
+  served by the standard library. Run `python -u -m querycraft.demo configs/local/11_qwen1.5b_lora_r16.yaml` and
+  open http://127.0.0.1:7860.
 * **Audit** (`make audit`). Recounts every reported number from the per question files and re-executes a random
   sample with an independent checker that shares no code with the scoring harness.
 

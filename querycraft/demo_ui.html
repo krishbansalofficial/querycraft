@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Querycraft</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237c6e5a' stroke-width='1.75' stroke-linecap='round'%3E%3Cellipse cx='12' cy='5' rx='8' ry='3'/%3E%3Cpath d='M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5'/%3E%3Cpath d='M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3'/%3E%3C/svg%3E">
+<style>
+/* Flat, warm neutral theme with hairline borders, no shadows and one quiet accent (same tokens as Sentinel). */
+:root {
+  --bg-canvas: #fafaf8; --bg-sidebar: #f5f4f2; --bg-card: #ffffff; --bg-secondary: #f0ede8; --bg-hover: #efefec;
+  --border: #e8e7e3; --border-input: #d8d7d2; --border-strong: #c8c7c2;
+  --text-primary: #1a1916; --text-body: #3d3c39; --text-muted: #6b6a66; --text-subtle: #716f6a;
+  --primary: #7c6e5a; --primary-hover: #9e8c74; --primary-text: #ffffff; --primary-tint: #f5f0eb;
+  --ok: #3b7a4d; --ok-bg: #edf5ea; --warn: #a5661a; --warn-bg: #fbf2e4; --warn-ink: #7a4d16;
+  --err: #b84040; --err-bg: #faeaea; --muted-dot: #9b9a96; --info: #4a78a8; --info-bg: #eaf0fa;
+  --radius: 8px; --sidebar-width: 220px;
+  --font: "Segoe UI", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-canvas: #161513; --bg-sidebar: #1b1a18; --bg-card: #1f1e1c; --bg-secondary: #2a2825; --bg-hover: #2f2d2a;
+    --border: #34322e; --border-input: #47443f; --border-strong: #5b5851;
+    --text-primary: #f2f0eb; --text-body: #d6d3cc; --text-muted: #a8a49c; --text-subtle: #9a968e;
+    --primary: #b7a58b; --primary-hover: #cdbca3; --primary-text: #1a1916; --primary-tint: #2b2721;
+    --ok: #6fbf86; --ok-bg: #1d2a21; --warn: #dba55a; --warn-bg: #2e2618; --warn-ink: #f0c988;
+    --err: #e07a7a; --err-bg: #331f1f; --muted-dot: #8a8780; --info: #7fa9d6; --info-bg: #1c2735;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { display: flex; background: var(--bg-canvas); color: var(--text-body); font: 14px/1.5 var(--font);
+  -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision; }
+code, pre, .mono { font-family: var(--mono); font-size: 0.92em; }
+button, select, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-thumb { border-radius: 999px; background: var(--border-strong); }
+
+/* Sidebar */
+aside { width: var(--sidebar-width); min-width: var(--sidebar-width); display: flex; flex-direction: column;
+  background: var(--bg-sidebar); border-right: 1px solid var(--border); }
+.brand { display: flex; align-items: center; gap: 8px; padding: 32px 20px 8px; color: var(--text-primary);
+  text-decoration: none; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.brand svg { width: 24px; height: 24px; color: var(--primary); }
+nav.side { flex: 1; overflow-y: auto; padding: 16px 16px 0; }
+.group + .group { margin-top: 16px; }
+.group-h { margin: 0 0 4px; padding: 0 10px; font-size: 11px; font-weight: 500; text-transform: uppercase;
+  letter-spacing: 0.04em; color: var(--text-subtle); }
+.nav { display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 10px; border-radius: 6px;
+  color: var(--text-muted); text-decoration: none; transition: background-color 120ms, color 120ms; }
+.nav:hover { background: var(--bg-hover); color: var(--text-primary); }
+.nav[aria-current="page"] { background: var(--bg-hover); color: var(--text-primary); font-weight: 500; }
+.nav svg { width: 16px; height: 16px; flex: none; }
+.recent { list-style: none; margin: 4px 0 0; padding: 0; }
+.recent button { display: flex; align-items: center; gap: 8px; width: 100%; height: 28px; padding: 0 10px 0 24px;
+  border: 0; border-radius: 6px; background: none; color: var(--text-muted); font-size: 13px; text-align: left; }
+.recent button:hover { background: var(--bg-hover); color: var(--text-primary); }
+.recent span.t { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.dot { width: 6px; height: 6px; flex: none; border-radius: 999px; background: var(--muted-dot); }
+.dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); } .dot.err { background: var(--err); }
+.side-foot { border-top: 1px solid var(--border); padding: 16px 20px; display: grid; gap: 6px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; justify-self: start; padding: 2px 8px; border-radius: 999px;
+  background: var(--bg-secondary); font-size: 13px; color: var(--text-body); }
+.foot-sub { font-size: 12px; color: var(--text-muted); overflow-wrap: anywhere; }
+
+/* Main */
+main { flex: 1; min-width: 0; overflow-y: auto; }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 40px 32px 48px; display: grid; gap: 24px; }
+h1 { margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.02em; color: var(--text-primary); }
+.sub { margin: 4px 0 0; color: var(--text-muted); font-size: 15px; }
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); }
+.card-h { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+.card-h h2 { margin: 0; font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.card-h .meta { margin-left: auto; font-size: 13px; color: var(--text-muted); }
+.card-b { padding: 20px; }
+label.f { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: var(--text-primary); }
+.row { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; }
+.row > .grow { flex: 1; min-width: 220px; }
+select, input[type=text], textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--border-input);
+  border-radius: 6px; background: var(--bg-card); transition: border-color 120ms; }
+select:hover, input[type=text]:hover, textarea:hover { border-color: var(--border-strong); }
+textarea { resize: vertical; min-height: 72px; }
+.fields { display: grid; gap: 16px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 16px;
+  border-radius: 6px; border: 1px solid transparent; font-weight: 600; transition: background-color 120ms; }
+.btn svg { width: 16px; height: 16px; }
+.btn-primary { background: var(--primary); color: var(--primary-text); }
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-primary:disabled { opacity: 0.6; cursor: default; }
+.btn-secondary { background: var(--bg-card); border-color: var(--border-input); color: var(--text-primary); font-weight: 500; }
+.btn-secondary:hover { background: var(--bg-hover); }
+.btn-ghost { background: none; color: var(--text-muted); font-weight: 500; height: 28px; padding: 0 8px; font-size: 13px; }
+.btn-ghost:hover { background: var(--bg-hover); color: var(--text-primary); }
+.actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.kbd { font-size: 12px; color: var(--text-subtle); }
+.examples { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { max-width: 100%; padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-card);
+  color: var(--text-body); font-size: 13px; text-align: left; }
+.chip:hover { background: var(--bg-hover); border-color: var(--border-strong); }
+.hidden { display: none !important; }
+
+/* Empty state */
+.empty { padding: 72px 24px; text-align: center; }
+.empty svg { width: 32px; height: 32px; color: var(--text-primary); }
+.empty h3 { margin: 16px 0 8px; font-size: 18px; font-weight: 600; color: var(--text-primary); }
+.empty p { max-width: 520px; margin: 0 auto; color: var(--text-muted); }
+
+/* Result */
+.status { display: flex; gap: 16px; align-items: center; padding: 16px 20px; border-radius: var(--radius); flex-wrap: wrap; }
+.status.ok { background: var(--ok-bg); } .status.warn { background: var(--warn-bg); } .status.err { background: var(--err-bg); }
+.status.info { background: var(--info-bg); }
+.status h3 { margin: 0; font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.status p { margin: 2px 0 0; color: var(--text-body); }
+.status .txt { flex: 1; min-width: 240px; }
+.status.warn h3 { color: var(--warn-ink); }
+.votes { display: grid; gap: 6px; justify-items: end; }
+.segs { display: flex; gap: 3px; }
+.seg { width: 14px; height: 8px; border-radius: 2px; background: var(--border-strong); opacity: 0.5; }
+.seg.on { opacity: 1; background: var(--primary); }
+.status.ok .seg.on { background: var(--ok); } .status.warn .seg.on { background: var(--warn); } .status.err .seg.on { background: var(--err); }
+.seg.need { box-shadow: inset 0 -2px 0 var(--text-primary); }
+.votes small { font-size: 12px; color: var(--text-muted); }
+pre.sql { margin: 0; padding: 16px 20px; overflow-x: auto; white-space: pre-wrap; word-break: break-word;
+  color: var(--text-primary); line-height: 1.6; }
+.kw { color: var(--primary); font-weight: 600; }
+.tbl-wrap { max-height: 420px; overflow: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 8px 20px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th { position: sticky; top: 0; background: var(--bg-card); font-weight: 600; color: var(--text-primary); }
+tbody tr:hover { background: var(--bg-hover); }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr.mark td { background: var(--primary-tint); }
+.spinner { width: 16px; height: 16px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 999px;
+  animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* How it works */
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); }
+.step { padding: 20px; }
+.step + .step { border-left: 1px solid var(--border); }
+.step .n { font-size: 13px; font-weight: 500; color: var(--text-muted); }
+.step h3 { margin: 4px 0 8px; font-size: 17px; font-weight: 600; color: var(--text-primary); }
+.step p { margin: 0; color: var(--text-muted); }
+.note { padding: 16px 20px; color: var(--text-muted); font-size: 13px; }
+
+/* Small screens: a compact top nav replaces the sidebar */
+.topnav { display: none; }
+@media (max-width: 767px) {
+  body { flex-direction: column; }
+  aside { display: none; }
+  .topnav { display: flex; gap: 4px; padding: 8px 12px; overflow-x: auto; background: var(--bg-sidebar);
+    border-bottom: 1px solid var(--border); scrollbar-width: none; }
+  .topnav a { flex: none; padding: 6px 12px; border-radius: 6px; color: var(--text-muted); text-decoration: none; }
+  .topnav a[aria-current="page"] { background: var(--bg-hover); color: var(--text-primary); font-weight: 500; }
+  .wrap { padding: 24px 16px 40px; }
+  .steps { grid-template-columns: 1fr; }
+  .step + .step { border-left: 0; border-top: 1px solid var(--border); }
+  .votes { justify-items: start; }
+  th, td { padding: 8px 12px; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-db" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></symbol>
+  <symbol id="i-ask" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M8 17v-5M13 17V8M18 17v-8"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+  <symbol id="i-git" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 8.5v7M18 10.5c0 4-6 3-11 5.5"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></symbol>
+</svg>
+
+<aside>
+  <a class="brand" href="#ask" aria-label="Querycraft home"><svg><use href="#i-db"/></svg>Querycraft</a>
+  <nav class="side" aria-label="Primary">
+    <div class="group">
+      <p class="group-h">Workspace</p>
+      <a class="nav" href="#ask" data-page="ask"><svg><use href="#i-ask"/></svg>Ask</a>
+      <ul class="recent" id="recent" aria-label="Recent questions"></ul>
+    </div>
+    <div class="group">
+      <p class="group-h">Project</p>
+      <a class="nav" href="#results" data-page="results"><svg><use href="#i-chart"/></svg>Results</a>
+      <a class="nav" href="#how" data-page="how"><svg><use href="#i-info"/></svg>How it works</a>
+    </div>
+    <div class="group">
+      <p class="group-h">Source</p>
+      <a class="nav" href="https://github.com/krishbansalofficial/querycraft" target="_blank" rel="noopener"><svg><use href="#i-git"/></svg>GitHub</a>
+    </div>
+  </nav>
+  <div class="side-foot" aria-live="polite">
+    <span class="pill"><span class="dot" id="conn-dot"></span><span id="conn">Connecting</span></span>
+    <span class="foot-sub" id="model">Local service</span>
+  </div>
+</aside>
+
+<main id="main">
+  <nav class="topnav" aria-label="Primary">
+    <a href="#ask" data-page="ask">Ask</a><a href="#results" data-page="results">Results</a><a href="#how" data-page="how">How it works</a>
+  </nav>
+
+  <!-- Ask -->
+  <div class="wrap" data-view="ask">
+    <header>
+      <h1>Ask</h1>
+      <p class="sub">Ask a question about a SQLite database. Everything runs on this computer; databases open read only.</p>
+    </header>
+
+    <section class="card">
+      <div class="card-b fields">
+        <div class="row">
+          <div class="grow">
+            <label class="f" for="db">Database</label>
+            <select id="db"></select>
+          </div>
+          <input type="file" id="file" accept=".sqlite,.db,.sqlite3" class="hidden">
+          <button class="btn btn-secondary" id="upload" type="button"><svg><use href="#i-up"/></svg>Upload .sqlite</button>
+        </div>
+        <div>
+          <label class="f" for="q">Question</label>
+          <textarea id="q" placeholder="Which school has the highest average math SAT score?"></textarea>
+        </div>
+        <div>
+          <label class="f" for="hint">Hint <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+          <input type="text" id="hint" placeholder="eligible free rate = Free Meal Count / Enrollment">
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" id="go" type="button">Ask</button>
+          <span class="kbd">Ctrl Enter</span>
+        </div>
+        <div id="ex-wrap">
+          <label class="f">Try one from BIRD dev</label>
+          <div class="examples" id="examples"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card empty" id="empty">
+      <svg><use href="#i-db"/></svg>
+      <h3>Ask your first question</h3>
+      <p>The model writes 8 candidate queries, runs them and votes on the result. It only calls the answer confident
+        when enough of them agree.</p>
+    </section>
+
+    <div id="result" class="hidden" style="display:grid;gap:24px">
+      <section class="status" id="status">
+        <div class="txt"><h3 id="st-title"></h3><p id="st-detail"></p></div>
+        <div class="votes" id="votes"><div class="segs" id="segs"></div><small id="votes-txt"></small></div>
+      </section>
+      <section class="card" id="sql-card">
+        <div class="card-h"><h2>SQL</h2><button class="btn btn-ghost" id="copy" type="button" style="margin-left:auto"><svg><use href="#i-copy"/></svg>Copy</button></div>
+        <pre class="sql" id="sql"></pre>
+      </section>
+      <section class="card" id="rows-card">
+        <div class="card-h"><h2>Result</h2><span class="meta" id="rows-meta"></span></div>
+        <div class="tbl-wrap"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="wrap hidden" data-view="results">
+    <header>
+      <h1>Results</h1>
+      <p class="sub">Execution accuracy of every finished run, read from the same files as the README.</p>
+    </header>
+    <section class="card">
+      <div class="card-h"><h2>BIRD dev and held back</h2><span class="meta">1,534 dev questions, 100 held back</span></div>
+      <div class="tbl-wrap" style="max-height:none">
+        <table>
+          <thead><tr><th>Model</th><th style="text-align:right">Dev EX</th><th style="text-align:right">95% CI</th><th style="text-align:right">Held back EX</th></tr></thead>
+          <tbody id="res-body"><tr><td colspan="4" style="color:var(--text-muted)">Loading</td></tr></tbody>
+        </table>
+      </div>
+      <p class="note">The highlighted row is the model behind this demo. Oracle rows use the gold query's tables and are
+        upper bounds, not usable systems. Paired significance tests are in the README.</p>
+    </section>
+  </div>
+
+  <!-- How it works -->
+  <div class="wrap hidden" data-view="how">
+    <header>
+      <h1>How it works</h1>
+      <p class="sub">A fine tuned Qwen2.5 Coder model that knows when it is unsure.</p>
+    </header>
+    <section class="card">
+      <div class="card-h"><h2>From question to answer</h2></div>
+      <div class="steps">
+        <div class="step"><span class="n">Step 1</span><h3>Fit the schema</h3>
+          <p>The database schema is read straight from the file and pruned to 1,280 tokens, keeping the tables and
+            columns that match the question and hint.</p></div>
+        <div class="step"><span class="n">Step 2</span><h3>Write 8 queries</h3>
+          <p>The model writes one greedy query and 8 sampled ones. Each runs against the database with a timeout.</p></div>
+        <div class="step"><span class="n">Step 3</span><h3>Vote, or say unsure</h3>
+          <p>Queries are grouped by the rows they return. The largest group wins; its share is the confidence, with
+            the threshold chosen on validation data.</p></div>
+      </div>
+    </section>
+    <section class="status info">
+      <div class="txt"><h3>Read only, on this computer</h3>
+        <p>The server listens on localhost only, databases open read only, and uploads stay in a temporary folder
+          that is deleted when the demo stops.</p></div>
+    </section>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const state = { info: null, recent: [], results: null, uploads: {} };
+const KW = /\b(SELECT|FROM|WHERE|JOIN|INNER|LEFT|RIGHT|OUTER|ON|AND|OR|NOT|GROUP BY|ORDER BY|LIMIT|AS|COUNT|SUM|AVG|MIN|MAX|DISTINCT|HAVING|DESC|ASC|CAST|CASE|WHEN|THEN|ELSE|END|IN|IS|NULL|LIKE|BETWEEN|UNION|IIF|REAL|INTEGER)\b/g;
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function route() {
+  const page = (location.hash || "#ask").slice(1);
+  const known = ["ask", "results", "how"].includes(page) ? page : "ask";
+  document.querySelectorAll("[data-view]").forEach((v) => v.classList.toggle("hidden", v.dataset.view !== known));
+  document.querySelectorAll("[data-page]").forEach((a) => a.dataset.page === known ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
+  if (known === "results") loadResults();
+  $("main").scrollTo({ top: 0 });
+}
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  const body = await r.json().catch(() => ({ error: `HTTP ${r.status}` }));
+  if (!r.ok) throw new Error(body.error || `HTTP ${r.status}`);
+  return body;
+}
+
+function setConn(label, tone) { $("conn").textContent = label; $("conn-dot").className = "dot " + tone; }
+
+async function init() {
+  try {
+    state.info = await api("/api/info");
+    setConn("Model ready", "ok");
+    $("model").innerHTML = `${esc(state.info.model)}<br>${esc(state.info.checkpoint)} · local, read only`;
+    const dbs = Object.keys(state.info.databases);
+    $("db").innerHTML = dbs.map((d) => `<option value="${esc(d)}">${esc(d)}</option>`).join("");
+    if (dbs.includes("california_schools")) $("db").value = "california_schools";
+    showExamples();
+  } catch (e) { setConn("Offline", "err"); $("model").textContent = "Start the demo server and reload."; }
+}
+
+function showExamples() {
+  const ex = (state.info && state.info.databases[$("db").value]) || [];
+  $("ex-wrap").classList.toggle("hidden", !ex.length);
+  $("examples").innerHTML = ex.map((e, i) => `<button class="chip" type="button" data-i="${i}">${esc(e.question)}</button>`).join("");
+  $("examples").querySelectorAll(".chip").forEach((b) => b.onclick = () => {
+    const e = ex[+b.dataset.i]; $("q").value = e.question; $("hint").value = e.hint || ""; $("q").focus();
+  });
+}
+
+const TONE = { answer: "ok", unsure: "warn", empty: "warn", error: "err" };
+function describe(r) {
+  const v = r.votes, agree = `${v.agree} of ${v.n} sampled queries agree`;
+  if (r.state === "answer") return ["Answer", `${agree} (needs ${v.needed} to answer; ${v.distinct} distinct results).`];
+  if (r.state === "unsure") return ["Not sure", `Only ${agree} (needs ${v.needed}). The candidates disagree, so treat the result below as a guess.`];
+  if (r.state === "empty") return ["No rows", "The query ran but returned nothing. Often a filter value the database spells differently; try adding a hint."];
+  return ["Could not answer", `The best query failed: ${r.error}`];
+}
+
+function render(r, question) {
+  $("empty").classList.add("hidden");
+  $("result").classList.remove("hidden");
+  const tone = TONE[r.state] || "err", [title, detail] = describe(r);
+  $("status").className = "status " + tone;
+  $("st-title").textContent = title;
+  $("st-detail").textContent = detail;
+  const v = r.votes;
+  $("segs").innerHTML = Array.from({ length: v.n }, (_, i) => `<span class="seg${i < v.agree ? " on" : ""}${i === v.needed - 1 ? " need" : ""}"></span>`).join("");
+  $("votes-txt").textContent = `${v.agree}/${v.n} agree · ${r.seconds}s`;
+  $("sql").innerHTML = esc(r.sql || "").replace(KW, '<span class="kw">$1</span>');
+  const cols = r.columns && r.columns.length ? r.columns : ["(no result)"];
+  $("thead").innerHTML = `<tr>${cols.map((c) => `<th>${esc(c)}</th>`).join("")}</tr>`;
+  $("tbody").innerHTML = (r.rows || []).map((row) => `<tr>${row.map((c) => `<td class="${typeof c === "number" ? "num" : ""}">${c === null ? '<span style="color:var(--text-subtle)">NULL</span>' : esc(c)}</td>`).join("")}</tr>`).join("");
+  $("rows-meta").textContent = r.rows && r.rows.length ? `${r.rows.length} row${r.rows.length === 1 ? "" : "s"}${r.rows.length >= 200 ? " (first 200)" : ""}` : "";
+  $("rows-card").classList.toggle("hidden", r.state === "error");
+}
+
+function renderError(msg) {
+  $("empty").classList.add("hidden");
+  $("result").classList.remove("hidden");
+  $("status").className = "status err";
+  $("st-title").textContent = "Something went wrong";
+  $("st-detail").textContent = msg;
+  $("segs").innerHTML = ""; $("votes-txt").textContent = "";
+  $("sql-card").classList.add("hidden"); $("rows-card").classList.add("hidden");
+}
+
+async function ask() {
+  const question = $("q").value.trim();
+  if (!question) { $("q").focus(); return; }
+  const go = $("go");
+  go.disabled = true; go.innerHTML = '<span class="spinner"></span>Thinking';
+  try {
+    const r = await api("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ db: $("db").value, question, hint: $("hint").value }) });
+    $("sql-card").classList.remove("hidden");
+    render(r, question);
+    state.recent.unshift({ question, hint: $("hint").value, db: $("db").value, r });
+    state.recent = state.recent.slice(0, 6);
+    renderRecent();
+  } catch (e) { renderError(e.message); }
+  finally { go.disabled = false; go.textContent = "Ask"; }
+}
+
+function renderRecent() {
+  $("recent").innerHTML = state.recent.map((x, i) => `<li><button type="button" data-i="${i}" title="${esc(x.question)}"><span class="dot ${TONE[x.r.state] || "err"}"></span><span class="t">${esc(x.question)}</span></button></li>`).join("");
+  $("recent").querySelectorAll("button").forEach((b) => b.onclick = () => {
+    const x = state.recent[+b.dataset.i];
+    location.hash = "#ask"; $("db").value = x.db; $("q").value = x.question; $("hint").value = x.hint;
+    $("sql-card").classList.remove("hidden"); render(x.r, x.question);
+  });
+}
+
+async function upload(file) {
+  const b = $("upload"); b.disabled = true; b.innerHTML = '<span class="spinner"></span>Uploading';
+  try {
+    const r = await api("/api/upload", { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: file });
+    const opt = new Option(`${file.name} (uploaded)`, r.db);
+    $("db").add(opt, 0); $("db").value = r.db; showExamples();
+  } catch (e) { renderError(e.message); }
+  finally { b.disabled = false; b.innerHTML = '<svg><use href="#i-up"/></svg>Upload .sqlite'; $("file").value = ""; }
+}
+
+async function loadResults() {
+  if (state.results) return;
+  try {
+    state.results = await api("/api/results");
+    const mine = state.info && state.info.model;
+    $("res-body").innerHTML = state.results.map((r) => `<tr class="${r.name === mine ? "mark" : ""}"><td>${esc(r.label)}</td><td class="num">${r.dev ?? ""}</td><td class="num" style="color:var(--text-muted)">${r.ci ? `${r.ci[0]} to ${r.ci[1]}` : ""}</td><td class="num">${r.heldback ?? ""}</td></tr>`).join("");
+  } catch (e) { $("res-body").innerHTML = `<tr><td colspan="4">${esc(e.message)}</td></tr>`; }
+}
+
+$("go").onclick = ask;
+$("q").addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") ask(); });
+$("db").onchange = showExamples;
+$("upload").onclick = () => $("file").click();
+$("file").onchange = () => $("file").files[0] && upload($("file").files[0]);
+$("copy").onclick = async () => { try { await navigator.clipboard.writeText($("sql").textContent); $("copy").lastChild.textContent = "Copied"; setTimeout(() => $("copy").lastChild.textContent = "Copy", 1200); } catch {} };
+window.addEventListener("hashchange", route);
+route(); init();
+</script>
+</body>
+</html>
