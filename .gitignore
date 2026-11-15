@@ -9,3 +9,4 @@ wandb/
 session_logs/
 runs_probe
 /modal_ledger.json
+/scripts/DEPLOYED_COMMIT

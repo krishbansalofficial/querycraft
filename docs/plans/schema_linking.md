@@ -68,4 +68,4 @@ not from missing tables. The question is whether a smaller, more focused schema 
 
 ## 7B follow up (configured, not yet run)
 
-The same oracle and self linking runs on the best 7B model (DoRA, checkpoint-560): `configs/linking/53_qwen7b_dora_oracle.yaml` and `54_qwen7b_dora_selflink.yaml`, launched with `modal run --detach scripts/modal_app.py --linking`. Eval only, worst case 1.0 A100 hour. The spend guardrail defers them until the Modal credit renews on Dec 1 (this cycle is already at the cap). No numbers exist for them yet.
+The same oracle and self linking runs on the best 7B model (DoRA, checkpoint-560): `configs/linking/53_qwen7b_dora_oracle.yaml` and `54_qwen7b_dora_selflink.yaml`, launched with `modal run --detach scripts/modal_app.py --linking`. Eval only, worst case 1.0 A100 hour. The spend guardrail defers them until the Modal credit renews on Dec 1 (this cycle is already at the cap), so they are scheduled on Modal for 12:00 UTC Dec 1 (`linking_on_dec1` in `scripts/modal_app.py`, armed with `modal deploy`); the guardrail still checks the budget when it fires. No numbers exist for them yet.

@@ -148,6 +148,14 @@ def queue(smoke, dry_run, git, allow_partial=False, linking=False):
     print(f"spent this cycle: ${budget.spent(budget.load(ledger))} of ${budget.CAP_USD} cap")
 
 
+@app.function(cpu=0.25, memory=1024, timeout=24 * 3600, schedule=modal.Cron("0 12 1 12 *"))
+def linking_on_dec1():
+    """`modal deploy scripts/modal_app.py` arms this: 12:00 UTC every Dec 1, after the monthly credit renews.
+    The budget guardrail still decides; later years find both runs done and exit in seconds."""
+    f = Path("/root/querycraft/scripts/DEPLOYED_COMMIT")  # written at deploy time; the image has no .git
+    queue.local(False, False, f.read_text().strip() if f.exists() else "unknown", False, True)
+
+
 @app.local_entrypoint()
 def main(smoke: bool = False, dry_run: bool = False, allow_partial: bool = False, linking: bool = False):
     """--allow-partial: only with the workspace spend limit at $0 (see querycraft/budget.py).
