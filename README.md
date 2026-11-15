@@ -88,6 +88,12 @@ columns per database), so the task tests schema understanding as much as SQL syn
   only listens on localhost. It also shows every run's results. No extra dependencies: the page is one HTML file
   served by the standard library. Run `python -u -m querycraft.demo configs/local/11_qwen1.5b_lora_r16.yaml` and
   open http://127.0.0.1:7860.
+
+  ![Querycraft demo](docs/figures/demo.png)
+
+  Real output of the 1.5B LoRA model on a BIRD dev question. It passed the confidence threshold (3 of 8 sampled
+  queries agree), yet the query is wrong: it takes the maximum of each column separately instead of the maximum of
+  their ratio. At 44% dev accuracy, mistakes like this are common, which is why the page shows the SQL.
 * **Audit** (`make audit`). Recounts every reported number from the per question files and re-executes a random
   sample with an independent checker that shares no code with the scoring harness.
 

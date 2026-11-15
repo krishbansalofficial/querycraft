@@ -60,7 +60,7 @@ def main(runs_dir="runs", sample=150):
         res = json.loads(res_f.read_text())
         tag = res.get("selected_checkpoint", "base")
         for split in ("val", "dev", "heldback"):
-            if split not in res:
+            if "ex" not in res.get(split, {}):  # missing split, or a table selector run (set metrics, no SQL)
                 continue
             scored = run / "eval" / f"{split}_{tag}.scored.jsonl"
             preds = run / "eval" / f"{split}_{tag}.jsonl"
