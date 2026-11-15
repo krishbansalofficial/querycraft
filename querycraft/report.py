@@ -39,12 +39,13 @@ def _size(model):
 def _label(r):
     c = r["cfg"]
     t = c.get("train")
+    sft = f"{_size(c['model'])} SFT {'DoRA' if 'dora' in c['model'] else 'LoRA'}"
     if c["prompt"].get("linking") == "oracle":
-        return f"{_size(c['model'])} SFT LoRA, oracle tables (upper bound)"
+        return f"{sft}, oracle tables (upper bound)"
     if c["prompt"].get("linking") == "selector":
-        return f"{_size(c['model'])} SFT LoRA, trained table selector (2 pass)"
+        return f"{sft}, trained table selector (2 pass)"
     if c["prompt"].get("linking") == "self":
-        return f"{_size(c['model'])} SFT LoRA, self linked tables (2 pass)"
+        return f"{sft}, self linked tables (2 pass)"
     if not t:
         return f"{_size(c['model'])} {'few shot (3)' if c['prompt'].get('shots') else 'zero shot'}"
     if t["method"] == "grpo":
@@ -149,9 +150,9 @@ def tables(rows):
             out.append("")
         built = [r for r in done if r["cfg"]["model"].startswith("runs/")]  # GRPO and schema linking, on the SFT model
         if built:
-            out.append("### Built on the 1.5B SFT model, paired against it\n")
+            out.append("### Built on an SFT model, paired against it\n")
             out.append("GRPO arms start from the 1.5B LoRA r16 SFT checkpoint and train 125 steps on 1,000 prompts the "
-                       "SFT model solves 1 to 7 times out of 8. Schema linking runs use the same SFT model unchanged and "
+                       "SFT model solves 1 to 7 times out of 8. Schema linking runs use an SFT model unchanged (1.5B LoRA r16, or the 7B DoRA run) and "
                        "only change which tables the prompt shows (`docs/plans/schema_linking.md`); the oracle row uses "
                        "the gold SQL's tables and is an upper bound, not a usable system. p is an exact two sided sign "
                        "test on the questions where exactly one of the two models is right.\n")
@@ -186,7 +187,7 @@ def tables(rows):
         out.append("### Targets (not yet measured)\n")
         out.append("These runs are configured but have no logged results yet. No numbers are reported for them.\n")
         for r in todo:
-            out.append(f"* {_label(r)} (`{r['cfg']['_path']}`, {'A100 80GB' if r['profile'] == 'rented' else 'RTX 4070 Laptop 8GB'})")
+            out.append(f"* {_label(r)} (`{r['cfg']['_path']}`, {'A100 80GB' if r['profile'] == 'rented' or r['cfg'].get('budget_hours') else 'RTX 4070 Laptop 8GB'})")
         out.append("")
     return "\n".join(out), done
 

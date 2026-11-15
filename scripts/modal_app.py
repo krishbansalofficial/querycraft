@@ -23,6 +23,7 @@ ORDER = [  # what the laptop cannot do first; DoRA last because it needs the who
     "12_qwen7b_qlora_r64.yaml", "02_qwen7b_fewshot.yaml", "20_qwen7b_dora_best.yaml"]
 SMOKE_ORDER = ["01_smoke_zeroshot.yaml", "10_smoke_qlora_r8.yaml", "11_smoke_qlora_r16.yaml",
                "20_smoke_dora_best.yaml", "30_smoke_full.yaml"]
+LINKING_ORDER = ["53_qwen7b_dora_oracle.yaml", "54_qwen7b_dora_selflink.yaml"]  # eval only, on the DoRA model
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -59,9 +60,18 @@ def prepare():
 
 def _job(cfg, runs, git):
     import os
+    from querycraft.config import load_config
+    from querycraft.infer import merge_adapter
+    os.chdir("/root/querycraft")  # config, model and link_from paths are relative to the repo
     env = dict(os.environ, RUNS_DIR=f"/vol/{runs}", QC_GIT_COMMIT=git)
+    c = load_config(cfg)
+    if not Path("runs").exists():  # linking configs name files under runs/ (model, link_from)
+        Path("runs").symlink_to(f"/vol/{runs}")
     try:
-        if "/0" not in cfg:  # configs starting with 0 are baselines (no training)
+        if "merge_from" in c and not (Path(c["model"]) / "config.json").exists():
+            merge_adapter(c["merge_from"]["base"], c["merge_from"]["ckpt"])
+            vol.commit()
+        if "train" in c:  # baselines and linking runs only evaluate
             _sh(f"python -m querycraft.train {cfg}", env)
         _sh(f"python -m querycraft.run_eval {cfg}", env)
     finally:
@@ -91,7 +101,7 @@ def _wait(call_id):
 
 
 @app.function(cpu=0.25, memory=1024, timeout=24 * 3600)
-def queue(smoke, dry_run, git, allow_partial=False):
+def queue(smoke, dry_run, git, allow_partial=False, linking=False):
     """The job loop runs on Modal (a few cents of CPU), so it survives the laptop sleeping."""
     import sys
     sys.path.insert(0, "/root/querycraft")
@@ -99,6 +109,7 @@ def queue(smoke, dry_run, git, allow_partial=False):
     from querycraft.config import load_config
 
     profile, runs, order, fn = ("smoke", "runs_smoke", SMOKE_ORDER, smoke_job) if smoke else \
+                               ("linking", "runs", LINKING_ORDER, job) if linking else \
                                ("rented", "runs", ORDER, job)
     ledger = "/vol/modal_ledger.json"
     vol.reload()
@@ -130,13 +141,18 @@ def queue(smoke, dry_run, git, allow_partial=False):
         finally:
             budget.record(ledger, name, cfg.get("budget_hours", 0.3), (time.time() - t0) / 3600)
             vol.commit()
+    if linking and not dry_run and all(n in done for n in ("qwen7b_dora_oracle", "qwen7b_dora_selflink")):
+        import shutil  # the merged 7B model is a 15 GB cache; drop it once both linking runs are scored
+        shutil.rmtree("/vol/runs/qwen7b_dora_best/merged/checkpoint-560", ignore_errors=True)
+        vol.commit()
     print(f"spent this cycle: ${budget.spent(budget.load(ledger))} of ${budget.CAP_USD} cap")
 
 
 @app.local_entrypoint()
-def main(smoke: bool = False, dry_run: bool = False, allow_partial: bool = False):
-    """--allow-partial: only with the workspace spend limit at $0 (see querycraft/budget.py)."""
+def main(smoke: bool = False, dry_run: bool = False, allow_partial: bool = False, linking: bool = False):
+    """--allow-partial: only with the workspace spend limit at $0 (see querycraft/budget.py).
+    --linking: the 7B schema linking runs (configs/linking/53, 54) instead of the training queue."""
     git = subprocess.check_output(["git", "-C", str(REPO), "rev-parse", "HEAD"], text=True).strip()
     if subprocess.check_output(["git", "-C", str(REPO), "status", "--porcelain", "--untracked-files=no"], text=True):
         git += "-dirty"
-    queue.remote(smoke, dry_run, git, allow_partial)  # use `modal run --detach` so it keeps going after this terminal closes
+    queue.remote(smoke, dry_run, git, allow_partial, linking)  # use `modal run --detach` so it keeps going after this terminal closes

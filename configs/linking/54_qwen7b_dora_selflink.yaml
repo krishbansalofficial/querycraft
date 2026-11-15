@@ -1,0 +1,12 @@
+# Schema linking at 7B: the same DoRA model, second pass over only the tables its own first pass used, plus one
+# foreign key hop. No gold labels at inference; same rule as the 1.5B self linking run, fixed in advance.
+inherit: ../rented/01_qwen7b_zeroshot.yaml
+name: qwen7b_dora_selflink
+model: runs/qwen7b_dora_best/merged/checkpoint-560
+merge_from: {base: Qwen/Qwen2.5-Coder-7B-Instruct, ckpt: runs/qwen7b_dora_best/ckpt/checkpoint-560}
+prompt:
+  linking: self
+  link_from: runs/qwen7b_dora_best/eval/{split}_checkpoint-560.jsonl
+eval:
+  forgetting: false
+budget_hours: 0.5

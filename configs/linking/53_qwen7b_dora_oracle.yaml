@@ -1,0 +1,11 @@
+# Schema linking at 7B: the best 7B fine tune (DoRA, checkpoint chosen on val) shown only the tables its gold SQL
+# uses. Uses gold labels at inference, so it is an upper bound, not a result. Runs on Modal (scripts/modal_app.py --linking).
+inherit: ../rented/01_qwen7b_zeroshot.yaml
+name: qwen7b_dora_oracle
+model: runs/qwen7b_dora_best/merged/checkpoint-560
+merge_from: {base: Qwen/Qwen2.5-Coder-7B-Instruct, ckpt: runs/qwen7b_dora_best/ckpt/checkpoint-560}
+prompt:
+  linking: oracle
+eval:
+  forgetting: false
+budget_hours: 0.5   # worst case A100 hours: DoRA merge + val, dev, heldback generation

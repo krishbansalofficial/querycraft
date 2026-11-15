@@ -65,3 +65,7 @@ not from missing tables. The question is whether a smaller, more focused schema 
 * The oracle uses gold labels at inference. It is reported only as an upper bound, labelled as such, never as a result.
 * Every choice (threshold, which hop rule, which checkpoint) is made on val; dev and held back are only evaluated.
 * Laptop only. A 7B version waits for the Modal credit cycle and the user's go ahead.
+
+## 7B follow up (configured, not yet run)
+
+The same oracle and self linking runs on the best 7B model (DoRA, checkpoint-560):  and , launched with . Eval only, worst case 1.0 A100 hour. The spend guardrail defers them until the Modal credit renews on Dec 1 (this cycle is already at the cap). No numbers exist for them yet.

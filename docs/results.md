@@ -73,9 +73,9 @@ p is an exact two sided sign test on the questions where exactly one of the two 
 | 7B DoRA (4 bit base) r8 | 51.43 | 51.69 | 114 | 110 | 0.841 | 88.0 | 83.0 | 4 | 9 | 0.267 |
 | 1.5B full fine tune | 27.44 | 42.76 | 323 | 88 | <0.001 | 61.0 | 65.0 | 19 | 15 | 0.608 |
 
-### Built on the 1.5B SFT model, paired against it
+### Built on an SFT model, paired against it
 
-GRPO arms start from the 1.5B LoRA r16 SFT checkpoint and train 125 steps on 1,000 prompts the SFT model solves 1 to 7 times out of 8. Schema linking runs use the same SFT model unchanged and only change which tables the prompt shows (`docs/plans/schema_linking.md`); the oracle row uses the gold SQL's tables and is an upper bound, not a usable system. p is an exact two sided sign test on the questions where exactly one of the two models is right.
+GRPO arms start from the 1.5B LoRA r16 SFT checkpoint and train 125 steps on 1,000 prompts the SFT model solves 1 to 7 times out of 8. Schema linking runs use an SFT model unchanged (1.5B LoRA r16, or the 7B DoRA run) and only change which tables the prompt shows (`docs/plans/schema_linking.md`); the oracle row uses the gold SQL's tables and is an upper bound, not a usable system. p is an exact two sided sign test on the questions where exactly one of the two models is right.
 
 | Model | SFT dev EX | Dev EX | Only new right | Only SFT right | p | SFT held back | Held back | Only new right | Only SFT right | p |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -94,6 +94,13 @@ GRPO arms start from the 1.5B LoRA r16 SFT checkpoint and train 125 steps on 1,0
 | 1.5B zero shot | 27.44 | 37.38 | 0.7693 | 56.23% | 54.29 | 84.67% | 43.68 | 86.3 (73.0% answered) |
 | 1.5B QLoRA r16 | 42.31 | 45.6 | 0.7494 | 56.03% | 61.23 | 85.91% | 51.03 | 87.14 (70.0% answered) |
 | 1.5B LoRA (bf16) r16 | 43.94 | 48.53 | 0.7411 | 56.49% | 64.09 | 81.41% | 55.29 | 90.77 (65.0% answered) |
+
+### Targets (not yet measured)
+
+These runs are configured but have no logged results yet. No numbers are reported for them.
+
+* 7B SFT DoRA, oracle tables (upper bound) (`configs/linking/53_qwen7b_dora_oracle.yaml`, A100 80GB)
+* 7B SFT DoRA, self linked tables (2 pass) (`configs/linking/54_qwen7b_dora_selflink.yaml`, A100 80GB)
 
 ![dev_ex_by_difficulty.png](docs/figures/dev_ex_by_difficulty.png)
 ![learn_vs_forget.png](docs/figures/learn_vs_forget.png)
