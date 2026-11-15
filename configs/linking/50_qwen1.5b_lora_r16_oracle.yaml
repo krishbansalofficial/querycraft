@@ -1,0 +1,9 @@
+# Schema linking step 1 (docs/plans/schema_linking.md): the SFT LoRA r16 model (merged) shown only the tables
+# its gold SQL uses. Uses gold labels at inference, so it is an upper bound for any table selector, not a result.
+inherit: ../local/01_qwen1.5b_zeroshot.yaml
+name: qwen1.5b_lora_r16_oracle
+model: runs/qwen1.5b_lora_r16/grpo/sft_merged
+prompt:
+  linking: oracle
+eval:
+  forgetting: false

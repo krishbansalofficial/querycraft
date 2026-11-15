@@ -24,7 +24,7 @@ def _j(p):
 def collect():
     rows = []
     paths = Path("configs").glob("[lrg]*/*.yaml")  # local + rented, then grpo (built on the local SFT run) last
-    for cfg_path in sorted(paths, key=lambda p: (p.parent.name == "grpo", str(p))):
+    for cfg_path in sorted(paths, key=lambda p: (p.parent.name in ("grpo", "linking"), str(p))):
         cfg = load_config(cfg_path)
         d = RUNS_DIR / cfg["name"]
         res, tm, em = _j(d / "results.json"), _j(d / "train_meta.json"), _j(d / "eval_meta.json")
@@ -39,6 +39,10 @@ def _size(model):
 def _label(r):
     c = r["cfg"]
     t = c.get("train")
+    if c["prompt"].get("linking") == "oracle":
+        return f"{_size(c['model'])} SFT LoRA, oracle tables (upper bound)"
+    if c["prompt"].get("linking") == "self":
+        return f"{_size(c['model'])} SFT LoRA, self linked tables (2 pass)"
     if not t:
         return f"{_size(c['model'])} {'few shot (3)' if c['prompt'].get('shots') else 'zero shot'}"
     if t["method"] == "grpo":
@@ -124,7 +128,7 @@ def tables(rows):
                     tp = r["train"].get("trainable_params") if r["train"] else None
                     out.append(f"| {_label(r)} | " + " | ".join(cells) + f" | {tp or 'all'} | {r['train'].get('peak_vram_gb', '') if r['train'] else ''} |")
                 out.append("")
-        zs = {_size(r["cfg"]["model"]): r for r in done if not r["cfg"].get("train") and not r["cfg"]["prompt"].get("shots")}
+        zs = {_size(r["cfg"]["model"]): r for r in done if not r["cfg"].get("train") and not r["cfg"]["prompt"].get("shots") and not r["cfg"]["prompt"].get("linking")}
         ft = [r for r in done if r["cfg"].get("train") and r["cfg"]["train"]["method"] != "grpo" and _size(r["cfg"]["model"]) in zs]
         if ft:
             out.append("### Does fine tuning beat zero shot? Paired against the same size zero shot model\n")
@@ -141,18 +145,24 @@ def tables(rows):
                     cells += [z["res"][split]["ex"], r["res"][split]["ex"], b, a, _sign_p(a, b)]
                 out.append(f"| {_label(r)} | " + " | ".join(map(str, cells)) + " |")
             out.append("")
-        grpo = [r for r in done if (r["cfg"].get("train") or {}).get("method") == "grpo"]
-        if grpo:
-            out.append("### GRPO on top of SFT, paired against its SFT parent (BIRD dev)\n")
-            out.append("Both arms start from the 1.5B LoRA r16 SFT checkpoint and train 125 steps on 1,000 prompts the "
-                       "SFT model solves 1 to 7 times out of 8. p is an exact two sided sign test on the questions "
-                       "where exactly one of the two models is right.\n")
-            out.append("| Model | SFT parent EX | GRPO EX | Only GRPO right | Only SFT right | p |")
-            out.append("|---|---|---|---|---|---|")
-            for r in grpo:
+        built = [r for r in done if r["cfg"]["model"].startswith("runs/")]  # GRPO and schema linking, on the SFT model
+        if built:
+            out.append("### Built on the 1.5B SFT model, paired against it\n")
+            out.append("GRPO arms start from the 1.5B LoRA r16 SFT checkpoint and train 125 steps on 1,000 prompts the "
+                       "SFT model solves 1 to 7 times out of 8. Schema linking runs use the same SFT model unchanged and "
+                       "only change which tables the prompt shows (`docs/plans/schema_linking.md`); the oracle row uses "
+                       "the gold SQL's tables and is an upper bound, not a usable system. p is an exact two sided sign "
+                       "test on the questions where exactly one of the two models is right.\n")
+            out.append("| Model | SFT dev EX | Dev EX | Only new right | Only SFT right | p | "
+                       "SFT held back | Held back | Only new right | Only SFT right | p |")
+            out.append("|---|---|---|---|---|---|---|---|---|---|---|")
+            for r in built:
                 parent = next(x for x in done if x["cfg"]["name"] == Path(r["cfg"]["model"]).parent.parent.name)
-                a, b = _paired(parent, r)
-                out.append(f"| {_label(r)} | {parent['res']['dev']['ex']} | {r['res']['dev']['ex']} | {b} | {a} | {_sign_p(a, b)} |")
+                cells = []
+                for split in ("dev", "heldback"):
+                    a, b = _paired(parent, r, split)
+                    cells += [parent["res"][split]["ex"], r["res"][split]["ex"], b, a, _sign_p(a, b)]
+                out.append(f"| {_label(r)} | " + " | ".join(map(str, cells)) + " |")
             out.append("")
         conf =[(r, json.loads(f.read_text())) for r in done if (f := r["dir"] / "confidence" / "confidence.json").exists()]
         if conf:

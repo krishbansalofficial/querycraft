@@ -1,0 +1,10 @@
+# Schema linking: the SFT LoRA r16 model (merged), second pass over only the tables its own first pass
+# (greedy, normal prompt) used, plus one foreign key hop. No gold labels at inference; the hop rule was fixed in advance.
+inherit: ../local/01_qwen1.5b_zeroshot.yaml
+name: qwen1.5b_lora_r16_selflink
+model: runs/qwen1.5b_lora_r16/grpo/sft_merged
+prompt:
+  linking: self
+  link_from: runs/qwen1.5b_lora_r16/eval/{split}_checkpoint-420.jsonl
+eval:
+  forgetting: false

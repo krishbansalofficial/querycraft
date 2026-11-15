@@ -18,10 +18,11 @@ def user_message(schema_text, question, evidence):
 
 
 class PromptBuilder:
-    def __init__(self, tokenizer, schema_budget=1280, shots=()):
+    def __init__(self, tokenizer, schema_budget=1280, shots=(), linking=None):
         self.tok = tokenizer
         self.budget = schema_budget
         self.shots = list(shots)  # train examples used as few shot turns
+        self.linking = linking  # "oracle": show only the tables the gold SQL uses (an upper bound, never a real system)
 
     @lru_cache(maxsize=200_000)
     def n_tokens(self, text):
@@ -31,6 +32,10 @@ class PromptBuilder:
         tables = read_schema(ex["db_path"])
         if not pruned:
             return serialize(tables)
+        if self.linking:  # same pruner and token budget, applied to the linked tables only
+            # oracle: the gold SQL's tables (upper bound). self: a first pass prediction's tables + one foreign key hop
+            used = gold_tables(ex["sql"]) if self.linking == "oracle" else fk_hop(tables, gold_tables(ex["link_sql"]))
+            tables = [t for t in tables if t["name"].lower() in used] or tables
         keep, bare = prune(tables, ex["question"], ex.get("evidence", ""), self.n_tokens, self.budget)
         return serialize(tables, keep, bare)
 
@@ -51,6 +56,19 @@ class PromptBuilder:
 
     def prompt_text(self, ex, pruned=True):
         return self.tok.apply_chat_template(self.messages(ex, pruned), tokenize=False, add_generation_prompt=True)
+
+
+def fk_hop(tables, names):
+    """names plus every table one foreign key away (either direction), lower case."""
+    out = set(names)
+    for t in tables:
+        for _, rt, _ in t["fks"]:
+            a, b = t["name"].lower(), rt.lower()
+            if a in names:
+                out.add(b)
+            if b in names:
+                out.add(a)
+    return out
 
 
 def gold_tables(sql):
