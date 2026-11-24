@@ -150,11 +150,13 @@ class OpenAILLM:
 def _log(st, tool, t0, **attrs):
     ms = round(1000 * (time.perf_counter() - t0), 2)
     st["trace"].append({"tool": tool, "ms": ms, **attrs})
-    with TRACER.start_as_current_span(f"agent.{tool}") as span:  # one span per step (no-op without a provider)
-        span.set_attribute("question_id", str(st["ex"]["id"]))
-        span.set_attribute("ms", ms)
-        for k, v in attrs.items():
-            span.set_attribute(k, v if isinstance(v, (int, float, bool, str)) else json.dumps(v)[:500])
+    # one span per step (no-op without a provider), backdated to when the step started so traces show its duration
+    span = TRACER.start_span(f"agent.{tool}", start_time=time.time_ns() - int(ms * 1e6))
+    span.set_attribute("question_id", str(st["ex"]["id"]))
+    span.set_attribute("ms", ms)
+    for k, v in attrs.items():
+        span.set_attribute(k, v if isinstance(v, (int, float, bool, str)) else json.dumps(v)[:500])
+    span.end()
 
 
 def _observe(st, sql, rows, err, opts):

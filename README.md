@@ -398,7 +398,8 @@ question + database
 
 **Serving.** `make serve` starts vLLM's OpenAI compatible server with the LoRA adapter and the API on
 http://127.0.0.1:8000 (the v1 demo page now runs on the new API). `docker compose -f serve/docker-compose.yml up`
-adds Prometheus (:9090), Grafana with the checked in dashboard (:3000) and Jaeger for per step traces (:16686).
+adds Prometheus (:9090), Grafana with the checked in dashboard (:3000) and Jaeger for per step traces (:16686);
+all five services were brought up and checked on the laptop.
 `POST /ask {"question", "database", "hint"}` returns the SQL, rows, confidence, whether it abstained, and the tables used.
 Deploy scripts for one AWS GPU instance or Modal are in `serve/deploy/` (written, never run: see `DEPLOY.md`).
 

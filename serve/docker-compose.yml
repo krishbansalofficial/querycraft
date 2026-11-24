@@ -3,12 +3,16 @@
 # Needs the NVIDIA container runtime and the repo's runs/ (adapter, retriever, abstain model) and data/ (databases).
 services:
   vllm:
-    image: vllm/vllm-openai:v0.32.0
+    image: vllm/vllm-openai:v0.32.0-cu129   # the default tag needs CUDA 13 (driver >= 580); this runs on 12.x drivers
+    # torchcodec in the image is a CUDA 13 build that crashes vLLM at import on 12.x drivers (same fix as the venv)
+    entrypoint: ["bash", "-c", "pip uninstall -y -q torchcodec; exec python3 -m vllm.entrypoints.openai.api_server \"$$@\"", "--"]
     command: >
       --model Qwen/Qwen2.5-Coder-1.5B-Instruct --served-model-name base
       --enable-lora --max-lora-rank 64 --lora-modules querycraft=/adapter
       --max-model-len 4096 --gpu-memory-utilization ${QC_GPU_UTIL:-0.85} --port 8001 --seed 0
-    environment: [VLLM_USE_FLASHINFER_SAMPLER=0]
+    # NVIDIA_DISABLE_REQUIRE: the image declares cuda>=12.9; on 12.x drivers (laptop: 560 / CUDA 12.6) the cu129 build
+    # still runs through CUDA minor version compatibility, exactly as the laptop venv does
+    environment: [VLLM_USE_FLASHINFER_SAMPLER=0, NVIDIA_DISABLE_REQUIRE=1]
     volumes:
       - ../runs/qwen1.5b_lora_r16/ckpt/checkpoint-420:/adapter:ro
       - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface

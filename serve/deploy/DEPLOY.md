@@ -27,4 +27,7 @@ Everything here costs money once started. The project itself only ever ran on a 
 * Add authentication (an API key header) and rate limiting in front of `/ask`.
 * The databases are opened read only, with a 30 s timeout and a 1,000 row cap per query (`querycraft/agent.py`).
 * The question log (`runs/live/questions.sqlite`) stores questions verbatim: treat it as user data.
-* Image tags in `serve/docker-compose.yml` were not pulled or tested by this project.
+* `serve/docker-compose.yml` was brought up on the laptop (RTX 4070, driver 560 / CUDA 12.6): all five services ran,
+  Prometheus scraped api and vllm, Grafana provisioned the dashboard, Jaeger received one span per agent step.
+  On a 12.x driver vLLM needs the `-cu129` image tag, `NVIDIA_DISABLE_REQUIRE=1` and torchcodec removed (all set).
+  The cloud deploy scripts themselves were never run.
