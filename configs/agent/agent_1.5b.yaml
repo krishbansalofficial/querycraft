@@ -1,0 +1,17 @@
+# v2 part 3: agent loop over the 1.5B LoRA r16 SFT model (querycraft/agent.py). Retrieval uses the trained
+# retriever's val chosen setting; repair_on_empty and widen_on_error are chosen by val EX (tune()).
+kind: agent
+name: agent_qwen1.5b
+seed: 0
+sql_config: configs/retriever/70_qwen1.5b_lora_r16_retrieved.yaml   # model, prompt budget, decoding
+ranked: runs/table_retriever/ranked/{split}.jsonl
+retriever_sweep: runs/table_retriever/sweep.json
+max_steps: 8            # hard limit on tool calls per question (retrieve, run, inspect, finish)
+max_repairs: 2          # rewrites after a failed attempt
+retry_temperature: 0.6  # only when a rewrite repeats an earlier query (v1 vote temperature, chosen on val)
+defaults: {repair_on_empty: true, widen_on_error: true}
+grid:
+  repair_on_empty: [false, true]
+  widen_on_error: [false, true]
+splits: [val, dev, heldback, iowa]
+latency_sample: 50      # dev questions timed one at a time (reporting only)

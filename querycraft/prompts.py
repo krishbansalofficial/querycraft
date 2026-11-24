@@ -53,16 +53,19 @@ class PromptBuilder:
         keep = {t["name"]: {c["name"] for c in t["columns"]} for t in tables if t["name"].lower() in used}
         return serialize(tables, keep or None)
 
-    def messages(self, ex, pruned=True, system=SYSTEM):
+    def messages(self, ex, pruned=True, system=SYSTEM, extra=None):
+        """extra: text appended to the question turn (the agent's observation of a failed attempt)."""
         msgs = [{"role": "system", "content": system}]
         for s in self.shots:
             msgs.append({"role": "user", "content": user_message(self._shot_schema(s), s["question"], s.get("evidence", ""))})
             msgs.append({"role": "assistant", "content": s["sql"]})
-        msgs.append({"role": "user", "content": user_message(self.schema_text(ex, pruned), ex["question"], ex.get("evidence", ""))})
+        user = user_message(self.schema_text(ex, pruned), ex["question"], ex.get("evidence", ""))
+        msgs.append({"role": "user", "content": user + (f"\n\n{extra}" if extra else "")})
         return msgs
 
-    def prompt_text(self, ex, pruned=True, system=SYSTEM):
-        return self.tok.apply_chat_template(self.messages(ex, pruned, system), tokenize=False, add_generation_prompt=True)
+    def prompt_text(self, ex, pruned=True, system=SYSTEM, extra=None):
+        return self.tok.apply_chat_template(self.messages(ex, pruned, system, extra), tokenize=False,
+                                            add_generation_prompt=True)
 
 
 def fk_hop(tables, names):
