@@ -1,0 +1,16 @@
+# v2 part 4: serving benchmark of the 1.5B SFT model (querycraft/bench.py). Fixed before any measurement.
+kind: bench
+name: bench_qwen1.5b
+seed: 0
+tokenizer: Qwen/Qwen2.5-Coder-1.5B-Instruct
+port: 8011
+gpu_memory_utilization: 0.85
+seconds: 60                 # per concurrency level
+concurrency: [1, 8, 32]
+gpu_price_per_hour:         # public on demand, modal.com/pricing read 2026-11-23 (per second rate x 3600)
+  L4: 0.80
+  A100_80GB: 2.50
+variants:
+  - {name: bf16_lora, model: Qwen/Qwen2.5-Coder-1.5B-Instruct, adapter: runs/qwen1.5b_lora_r16/ckpt/checkpoint-420}
+  - {name: bf16_merged, model: runs/qwen1.5b_lora_r16/grpo/sft_merged}   # same weights merged: separates merging from quantizing
+  - {name: awq_w4a16, model: runs/qwen1.5b_lora_r16/awq}

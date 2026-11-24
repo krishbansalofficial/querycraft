@@ -1,0 +1,46 @@
+# Querycraft on one GPU machine: vLLM (model) + API + Prometheus + Grafana (+ Jaeger for agent step traces).
+#   docker compose -f serve/docker-compose.yml up -d     then  http://localhost:8000 (demo), :3000 (Grafana), :16686 (traces)
+# Needs the NVIDIA container runtime and the repo's runs/ (adapter, retriever, abstain model) and data/ (databases).
+services:
+  vllm:
+    image: vllm/vllm-openai:v0.32.0
+    command: >
+      --model Qwen/Qwen2.5-Coder-1.5B-Instruct --served-model-name base
+      --enable-lora --max-lora-rank 64 --lora-modules querycraft=/adapter
+      --max-model-len 4096 --gpu-memory-utilization ${QC_GPU_UTIL:-0.85} --port 8001 --seed 0
+    environment: [VLLM_USE_FLASHINFER_SAMPLER=0]
+    volumes:
+      - ../runs/qwen1.5b_lora_r16/ckpt/checkpoint-420:/adapter:ro
+      - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices: [{driver: nvidia, count: 1, capabilities: [gpu]}]
+    ports: ["8001:8001"]
+    healthcheck: {test: ["CMD", "curl", "-f", "http://localhost:8001/health"], interval: 15s, retries: 40}
+  api:
+    build: {context: .., dockerfile: serve/Dockerfile.api}
+    environment:
+      - QC_VLLM_URL=http://vllm:8001
+      - QC_MODEL=querycraft
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+    volumes:
+      - ../runs:/app/runs
+      - ../data:/app/data:ro
+      - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface
+    depends_on: {vllm: {condition: service_healthy}}
+    ports: ["8000:8000"]
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    volumes: [./prometheus.yml:/etc/prometheus/prometheus.yml:ro]
+    ports: ["9090:9090"]
+  grafana:
+    image: grafana/grafana:12.1.0
+    environment: [GF_AUTH_ANONYMOUS_ENABLED=true, GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer]
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["3000:3000"]
+  jaeger:
+    image: jaegertracing/all-in-one:1.72.0
+    ports: ["16686:16686", "4318:4318"]

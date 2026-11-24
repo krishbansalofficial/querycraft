@@ -1,0 +1,9 @@
+# v2 part 4: the 1.5B LoRA r16 SFT model merged and quantized to 4 bit AWQ (W4A16, serve/bench/quantize_awq.py),
+# evaluated with the v1 prompt so it pairs question by question with the bf16 LoRA row (configs/local/11_*).
+inherit: ../local/01_qwen1.5b_zeroshot.yaml
+name: qwen1.5b_lora_r16_awq
+model: runs/qwen1.5b_lora_r16/awq
+eval:
+  forgetting: false
+  dtype: auto
+  tokenizer: Qwen/Qwen2.5-Coder-1.5B-Instruct

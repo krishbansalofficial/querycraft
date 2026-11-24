@@ -359,8 +359,10 @@ function showExamples() {
 const TONE = { answer: "ok", unsure: "warn", empty: "warn", error: "err" };
 function describe(r) {
   const v = r.votes, agree = `${v.agree} of ${v.n} sampled queries agree`;
-  if (r.state === "answer") return ["Answer", `${agree} (needs ${v.needed} to answer; ${v.distinct} distinct results).`];
-  if (r.state === "unsure") return ["Not sure", `Only ${agree} (needs ${v.needed}). The candidates disagree, so treat the result below as a guess.`];
+  // v2 API (serve/app.py): the decision is a calibrated confidence, not a vote count (needed is null)
+  const need = v.needed == null ? `confidence ${Math.round(100 * r.confidence)}%, answers from ${Math.round(100 * r.threshold)}%` : `needs ${v.needed} to answer`;
+  if (r.state === "answer") return ["Answer", `${agree} (${need}; ${v.distinct} distinct results).`];
+  if (r.state === "unsure") return ["Not sure", `Only ${agree} (${need}). Treat the result below as a guess.`];
   if (r.state === "empty") return ["No rows", "The query ran but returned nothing. Often a filter value the database spells differently; try adding a hint."];
   return ["Could not answer", `The best query failed: ${r.error}`];
 }
