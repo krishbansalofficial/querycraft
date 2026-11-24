@@ -1,0 +1,8 @@
+# v2 part 6: the v1 SFT model (LoRA r16, checkpoint chosen on val in v1, merged), v1 prompt, on the 30 Iowa Liquor
+# questions only. Its own run directory, so the v1 run (runs/qwen1.5b_lora_r16) is never rewritten.
+inherit: ../local/01_qwen1.5b_zeroshot.yaml
+name: qwen1.5b_sft_iowa
+model: runs/qwen1.5b_lora_r16/grpo/sft_merged
+eval:
+  forgetting: false
+  splits: [iowa]
