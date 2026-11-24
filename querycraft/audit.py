@@ -59,11 +59,12 @@ def main(runs_dir="runs", sample=150):
         run = res_f.parent
         res = json.loads(res_f.read_text())
         tag = res.get("selected_checkpoint", "base")
-        for split in ("val", "dev", "heldback"):
+        for split in ("val", "dev", "heldback", "iowa"):
             if "ex" not in res.get(split, {}):  # missing split, or a table selector run (set metrics, no SQL)
                 continue
-            scored = run / "eval" / f"{split}_{tag}.scored.jsonl"
-            preds = run / "eval" / f"{split}_{tag}.jsonl"
+            agent = "options" in res  # v2 agent runs keep per question files next to results.json
+            scored = run / (f"{split}_agent.scored.jsonl" if agent else f"eval/{split}_{tag}.scored.jsonl")
+            preds = run / (f"{split}_agent.jsonl" if agent else f"eval/{split}_{tag}.jsonl")
             if not scored.exists():
                 problems.append(f"{run.name} {split}: no scored file")
                 continue

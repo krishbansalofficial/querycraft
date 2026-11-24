@@ -8,6 +8,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      # the harness, split and schema code need no GPU stack
-      - run: pip install pytest sqlglot pyyaml
+      # the harness, split, schema and agent tool code need no GPU stack
+      - run: pip install pytest sqlglot pyyaml opentelemetry-api scipy
       - run: python -m pytest -q tests
+  eval-gate:
+    # replays cached model completions on a fixed 200 question val slice (querycraft/gate.py); fails if EX drops
+    # more than the margin in data/gate/baseline.json. No GPU, no BIRD databases: only the tokenizer is downloaded.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install sqlglot pyyaml "transformers>=5.16.1,<5.20.0" tokenizers jinja2
+      - run: python -m querycraft.gate check

@@ -10,3 +10,8 @@ session_logs/
 runs_probe
 /modal_ledger.json
 /scripts/DEPLOYED_COMMIT
+data/warehouse/raw/
+data/warehouse/*.sqlite
+mlflow/
+runs/live/
+!data/gate/schemas/**/*.schema3.json

@@ -1,0 +1,11 @@
+{
+  "n": 200,
+  "ex": 38.0,
+  "cache_hits": 200,
+  "margin": 1.0,
+  "model": "runs/qwen1.5b_lora_r16/grpo/sft_merged",
+  "config": "configs/retriever/70_qwen1.5b_lora_r16_retrieved.yaml",
+  "refreshed": "2026-11-23",
+  "seed": 0,
+  "note": "EX on 200 seeded val questions; replayed in CI from cached completions"
+}
