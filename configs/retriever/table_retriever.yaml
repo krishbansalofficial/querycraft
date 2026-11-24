@@ -1,0 +1,26 @@
+# v2 part 1: trained table retriever (querycraft/retriever.py). Not an SQL model: scored by set metrics, and the
+# second pass below (70_*) is the execution accuracy row. Every knob here was fixed before any evaluation except
+# the sweep, which is decided on val only.
+kind: retriever
+name: table_retriever
+seed: 0
+index: faiss            # or pgvector (QC_PG_DSN); same interface
+bi:
+  base: BAAI/bge-small-en-v1.5      # 33M params, 384 dims, MIT; strong small retrieval model, fast on CPU for serving
+  epochs: 2
+  batch: 64
+  mini_batch: 16      # GradCache chunk: same 64 way in batch negatives, fits 8 GB
+  lr: 5.0e-5
+  max_seq: 384
+cross:
+  base: cross-encoder/ms-marco-MiniLM-L6-v2   # 22M params, Apache 2.0; reranks 10 candidates in milliseconds
+  candidates: 10
+  epochs: 1
+  batch: 32
+  lr: 2.0e-5
+  max_seq: 512
+sweep:                  # chosen by second pass val EX of the SFT model (ties: fewer tables shown)
+  sources: [bi, rerank]
+  k: [2, 3, 4, 5]
+  hop: [false, true]
+sql_config: configs/retriever/70_qwen1.5b_lora_r16_retrieved.yaml

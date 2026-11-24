@@ -8,6 +8,8 @@ Splits (written to data/processed/*.jsonl):
   dev        BIRD dev (1,534). Held out test set. Never used for selection.
   heldback   ~100 questions written for this project on dev databases; final scoring only.
 """
+import contextvars
+import functools
 import json
 import random
 import sys
@@ -86,7 +88,27 @@ def load_heldback(dev_db: Path):
              "difficulty": r.get("difficulty")} for r in json.loads(HELDBACK.read_text())]
 
 
+REPORT_ONLY = ("dev", "heldback", "iowa")  # final reporting only: no choice may ever read them
+_SELECTING = contextvars.ContextVar("selecting", default=False)
+
+
+def selection(fn):
+    """Mark code that makes a choice (checkpoint, threshold, k, prompt). While it runs, load_split refuses dev
+    and held back; tests/test_v2_selection.py also checks every marked function never names those splits."""
+    @functools.wraps(fn)
+    def wrap(*a, **kw):
+        tok = _SELECTING.set(True)
+        try:
+            return fn(*a, **kw)
+        finally:
+            _SELECTING.reset(tok)
+    wrap.__selection__ = True
+    return wrap
+
+
 def load_split(name):
+    if _SELECTING.get() and name in REPORT_ONLY:
+        raise PermissionError(f"selection code may not read {name}: choices are made on val only")
     return [json.loads(l) for l in (PROC / f"{name}.jsonl").read_text().splitlines()]
 
 

@@ -44,7 +44,8 @@ class Generator:
         e = cfg["eval"]
         self.cfg = cfg
         self.model_path = model_path or cfg["model"]
-        self.llm = LLM(model=self.model_path, tokenizer=cfg["model"], dtype="bfloat16", seed=cfg["seed"],
+        self.llm = LLM(model=self.model_path, tokenizer=e.get("tokenizer", cfg["model"]), dtype=e.get("dtype", "bfloat16"),
+                       tensor_parallel_size=e.get("tensor_parallel_size", 1), seed=cfg["seed"],
                        max_model_len=e["max_model_len"], gpu_memory_utilization=e["gpu_memory_utilization"],
                        enable_lora=e.get("enable_lora", True), max_lora_rank=64, max_loras=1,
                        enforce_eager=e.get("enforce_eager", False))
@@ -79,7 +80,7 @@ def predict(gen: Generator, cfg, split, adapter=None, out_path=None):
     rows = load_split(split)
     if cfg["eval"].get("limit"):
         rows = rows[: cfg["eval"]["limit"]]
-    if cfg["prompt"].get("linking") in ("self", "selector"):  # second pass over tables picked by a first pass
+    if cfg["prompt"].get("linking") in ("self", "selector", "retriever"):  # second pass over tables picked by a first pass
         key = "link_sql" if cfg["prompt"]["linking"] == "self" else "link_tables"
         first = {(d := json.loads(l))["id"]: d.get("pred_sql", d.get("tables"))
                  for l in open(cfg["prompt"]["link_from"].format(split=split))}

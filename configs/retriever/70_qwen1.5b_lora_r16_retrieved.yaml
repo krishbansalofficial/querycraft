@@ -1,0 +1,12 @@
+# v2 part 1: the SFT LoRA r16 model (merged, unchanged), second pass over the tables the trained retriever picks
+# (source, k and foreign key hop chosen on val by `python -m querycraft.retriever sweep`). Same shape as the
+# selector row (configs/linking/52_*), so the two are directly comparable.
+inherit: ../local/01_qwen1.5b_zeroshot.yaml
+name: qwen1.5b_lora_r16_retrieved
+model: runs/qwen1.5b_lora_r16/grpo/sft_merged
+prompt:
+  linking: retriever
+  link_from: runs/table_retriever/eval/{split}_tables.jsonl
+eval:
+  forgetting: false
+  splits: [val, dev, heldback, iowa]   # iowa: the warehouse demo set, scored only
