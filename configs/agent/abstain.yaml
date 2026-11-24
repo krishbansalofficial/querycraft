@@ -1,0 +1,16 @@
+# v2 part 2: learned answer or abstain model (querycraft/abstain.py). Decides over the existing vote of 8 answers of
+# the 1.5B LoRA r16 SFT model (T=0.6, chosen on val in v1), so it is compared with the vote share threshold on the
+# very same SQL. Grid and calibration methods were fixed before fitting; 5 fold CV Brier on val picks among them.
+kind: abstain
+name: abstain_lgbm
+seed: 0
+votes: runs/qwen1.5b_lora_r16/confidence/{split}_T0.6.jsonl
+greedy: runs/qwen1.5b_lora_r16/eval/{split}_checkpoint-420.scored.jsonl
+ranked: runs/table_retriever/ranked/{split}.jsonl
+retriever_sweep: runs/table_retriever/sweep.json
+grid:
+  num_leaves: [4, 8, 16]
+  n_estimators: [50, 100, 200]
+  learning_rate: [0.05]
+calibration: [isotonic, sigmoid]   # sigmoid = Platt scaling
+coverage: [0.5, 0.7, 0.9]
