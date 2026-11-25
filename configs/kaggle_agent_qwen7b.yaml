@@ -1,0 +1,11 @@
+defaults:
+  repair_on_empty: true
+  widen_on_error: false
+grid: null
+inherit: /kaggle/tmp/qc/configs/agent/agent_1.5b.yaml
+latency_sample: 20
+name: agent_qwen7b
+splits:
+- dev
+- heldback
+sql_config: /kaggle/tmp/qc/configs/kaggle_qwen7b_dora_t4_retrieved_sql.yaml

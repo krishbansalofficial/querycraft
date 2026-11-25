@@ -16,7 +16,7 @@ paired exact sign test or a 95% interval; anything not measured yet says TBD.
 | Every gold table kept, dev (trained retriever vs v1 selector) | 0.9478 vs 0.8227 (5.07 vs 1.91 tables shown) |
 | Dev EX, 1.5B SFT: retrieved tables vs full pruned schema | 43.22 vs 43.94 (p = 0.294) |
 | Dev EX, 1.5B SFT LoRA: agent vs single pass (vs its own retrieved single pass) | 44.59 vs 43.94 (p = 0.363); vs 43.22 (p < 0.001) |
-| Dev EX, 7B SFT DoRA (T4, fp16): agent vs single pass (vs its own retrieved single pass) | TBD |
+| Dev EX, 7B SFT DoRA (T4, fp16): agent vs single pass (vs its own retrieved single pass) | 53.85 vs 51.63 (p < 0.001); vs 51.96 (p < 0.001) |
 | Dev accuracy at 70% answered: learned abstain vs vote share | 59.18 vs 59.46 (p = 0.795) |
 | Dev EX, 1.5B 4 bit AWQ vs bf16 | 39.7 vs 43.94 (p < 0.001) |
 | 1.5B bf16_lora on the laptop: p50 latency at 1 user; $ per 1k queries at 32 users (L4 price) | 960.0 ms; $0.0105 |
@@ -57,7 +57,13 @@ Backed by the paired tests and intervals in [Results](#results) (v2 tables follo
    reproduces the saved EX (38.0) exactly, and changing one word of the system prompt fails the build. The drift
    report flags the Iowa traffic as shorter (10.4 against 13.6 words, p = 0.0015) and more confident than val, with
    97% of questions on a database the system was never tuned on.
-7. **7B rows are TBD.** They need the Kaggle notebooks (`notebooks/kaggle_{a,b,c}_*.ipynb`); no 7B v2 number exists.
+7. **At 7B the loop is the first thing that beats zero shot.** The 7B DoRA agent, run in fp16 on two free Kaggle T4s,
+   scores 53.85 on dev (95% interval 51.3 to 56.3) against 51.63 for the same model's single pass (60 newly right,
+   26 newly wrong, p < 0.001) and 51.96 for its retrieved single pass (30 against 1, p < 0.001), with 14% of questions
+   repaired and a p50 latency of 2.2 s against 1.9 s. Against 7B zero shot it gains 2.4 points (149 against 112,
+   p = 0.026); v1's best fine tune never got below p = 0.23. Against that best fine tune (QLoRA r64, 52.67) the gain
+   is not significant (p = 0.17). Running in fp16 on the T4s instead of bf16 on the A100 changes 9 of 1,534 dev
+   answers (51.63 against 51.69, p = 1.0), so the comparison is not a precision artefact.
 
 ## Findings (v1: fine tuning study)
 
@@ -315,10 +321,18 @@ The agent retrieves tables, writes SQL, runs it, and on an error or an empty res
 
 1.5B SFT LoRA, 50 dev questions one at a time: agent p50 789.0 ms (p90 3710.9), single pass p50 650.9 ms (p90 987.1).
 
+| 7B SFT DoRA (T4, fp16) | dev | 53.85 | 51.63 | <0.001 | 51.96 | <0.001 | 3.38 | 1585.3 | 0.1375 |
+| 7B SFT DoRA (T4, fp16) | heldback | 86.0 | 83.0 | 0.549 | 84.0 | 0.5 | 3.15 | 1342.7 | 0.06 |
+
+The 7B single pass in fp16 on 2x T4 scores 51.63 on dev against 51.69 for the same model in bf16 on the A100 (v1): 9 of 1534 questions differ (p = 1.0).
+
+
+7B SFT DoRA (T4, fp16), 20 dev questions one at a time: agent p50 2224.9 ms (p90 4104.3), single pass p50 1910.9 ms (p90 3588.9).
+
 
 ### Serving: bf16 against 4 bit AWQ, 1.5B on the RTX 4070 Laptop (v2 part 4)
 
-Dev EX: AWQ 39.7 against bf16 43.94 (only AWQ right 51, only bf16 right 116, exact sign test p < 0.001, 1534 questions).
+Dev EX: AWQ 39.7 against bf16 (LoRA adapter, laptop) 43.94 (only AWQ right 51, only bf16 right 116, exact sign test p < 0.001, 1534 questions).
 
 Locust, 60 s per level, dev prompts, greedy, 256 max new tokens. Cost per 1,000 queries assumes this throughput at public on demand prices (L4 $0.8/h, A100_80GB $2.5/h).
 

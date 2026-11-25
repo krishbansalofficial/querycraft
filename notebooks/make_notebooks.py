@@ -59,7 +59,7 @@ sh("pip install -q uv")
 sh(f"uv venv -q {VENV} --python 3.12")
 sh(f"uv pip install --python {VPY} -q --index-strategy unsafe-best-match --extra-index-url https://download.pytorch.org/whl/cu129 "
    "'torch==2.13.0+cu129' 'vllm @ https://github.com/vllm-project/vllm/releases/download/v0.32.0/vllm-0.32.0+cu129-cp38-abi3-manylinux_2_28_x86_64.whl' "
-   "'transformers>=5.16.1,<5.20.0' peft accelerate sqlglot pyyaml opentelemetry-api httpx")
+   "'transformers>=5.16.1,<5.20.0' peft accelerate datasets sqlglot pyyaml opentelemetry-api httpx")
 sh(f"uv pip uninstall --python {VPY} torchcodec || true")
 '''
 
@@ -147,7 +147,7 @@ print(f"{(time.time() - t0) / 3600:.2f} h")
 C = nb("""# Querycraft v2 notebook C: 4 bit AWQ (W4A16) of the merged 7B DoRA model
 
 Settings: **GPU T4 x2** (or Colab T4 as a backup), **Internet on**. Same three inputs. Quantizes with llm-compressor's
-AWQ recipe, calibrated on 64 val prompts (up to 1,024 tokens) with their gold SQL, as for the 1.5B model (val is the split choices are made on; dev and held
+AWQ recipe, calibrated on 32 val prompts (up to 1,024 tokens) with their gold SQL, as for the 1.5B model (val is the split choices are made on; dev and held
 back are never touched). Output: `/kaggle/working/out/qwen7b_dora_awq.tar.gz` (~5.5 GB), which the laptop benchmark
 loads with vLLM (`make bench`). Estimated 1 GPU hour.
 """, [SETUP, INSTALL_VLLM, MERGE, r'''
@@ -166,15 +166,16 @@ from querycraft.data import load_split
 from querycraft.prompts import PromptBuilder
 tok = AutoTokenizer.from_pretrained('Qwen/Qwen2.5-Coder-7B-Instruct')
 pb = PromptBuilder(tok, 1280)
-rows = load_split('val')[:64]
+rows = load_split('val')[:32]
 texts = [tok.apply_chat_template(pb.messages(r) + [{'role': 'assistant', 'content': r['sql']}], tokenize=False) for r in rows]
 ds = Dataset.from_dict({'text': texts}).map(lambda x: tok(x['text'], truncation=True, max_length=1024), remove_columns=['text'])
-model = AutoModelForCausalLM.from_pretrained('%s', dtype=torch.float16, device_map='auto')
+# bf16, not fp16: in fp16 Qwen2.5 7B overflows to NaN at layer 23 during AWQ calibration (T4 emulates bf16; slower, safe). 32 samples, not 64: at 64 the run hit the 3 h session cut at layer 23 of 28
+model = AutoModelForCausalLM.from_pretrained('%s', dtype=torch.bfloat16, device_map='auto')
 t0 = time.time()
 oneshot(model=model, dataset=ds, recipe=[AWQModifier(targets=['Linear'], scheme='W4A16_ASYM', ignore=['lm_head'])],
         max_seq_length=1024, num_calibration_samples=len(texts))
 model.save_pretrained('%s', save_compressed=True); tok.save_pretrained('%s')
-json.dump({'calibration': '64 val prompts + gold SQL, 1024 tokens', 'scheme': 'W4A16_ASYM', 'seconds': round(time.time() - t0)},
+json.dump({'calibration': '32 val prompts + gold SQL, 1024 tokens', 'scheme': 'W4A16_ASYM', 'seconds': round(time.time() - t0)},
           open('%s/querycraft_quant.json', 'w'))
 """ % (QC, MERGED, T / "qwen7b_dora_awq", T / "qwen7b_dora_awq", T / "qwen7b_dora_awq")
 (T / "quant.py").write_text(QUANT)

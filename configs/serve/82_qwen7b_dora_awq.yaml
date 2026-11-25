@@ -1,0 +1,13 @@
+# v2 part 4 (7B): the 7B DoRA SFT model (checkpoint chosen on val in v1), merged and quantized to 4 bit AWQ on Kaggle
+# (notebook C), evaluated on the 8 GB laptop with the v1 prompt. Pairs question by question with the v1 A100 bf16 run
+# (runs/qwen7b_dora_best). bf16 7B does not fit 8 GB, so 4 bit is the only way 7B serves locally.
+inherit: ../rented/01_qwen7b_zeroshot.yaml
+name: qwen7b_dora_awq
+model: runs/qwen7b_dora_best/awq
+eval:
+  forgetting: false
+  dtype: auto
+  tokenizer: Qwen/Qwen2.5-Coder-7B-Instruct
+  splits: [dev, heldback]
+  gpu_memory_utilization: 0.92
+  max_model_len: 3072

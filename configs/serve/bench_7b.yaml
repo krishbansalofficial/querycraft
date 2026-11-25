@@ -1,0 +1,7 @@
+# v2 part 4 (7B): latency and throughput of the 4 bit 7B model on the 8 GB laptop (bf16 7B does not fit).
+inherit: bench.yaml
+name: bench_qwen7b
+tokenizer: Qwen/Qwen2.5-Coder-7B-Instruct
+gpu_memory_utilization: 0.92
+variants:
+  - {name: awq_w4a16_7b, model: runs/qwen7b_dora_best/awq}

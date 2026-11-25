@@ -356,6 +356,12 @@ def agent_section():
             out.append(f"| {label} | {split} | {s['ex']} | {v1[1] if v1 else 'TBD'} | {v1[4] if v1 else ''} | "
                        f"{v2[1] if v2 else 'TBD'} | {v2[4] if v2 else ''} | {s['mean_steps']} | {s['mean_tokens']} | "
                        f"{s['share_repaired']} |")
+        if run == "agent_qwen7b":  # precision check: the T4 runs fp16, v1's A100 ran bf16
+            v = _vs(_scored("runs/qwen7b_dora_t4_single/eval/dev_base.scored.jsonl"),
+                    _scored("runs/qwen7b_dora_best/eval/dev_checkpoint-560.scored.jsonl"))
+            if v:
+                out.append(f"\nThe 7B single pass in fp16 on 2x T4 scores {v[0]} on dev against {v[1]} for the same "
+                           f"model in bf16 on the A100 (v1): {v[2] + v[3]} of {v[5]} questions differ ({_p(v[4])}).\n")
         lat = r.get("latency")
         if lat:
             out.append(f"\n{label}, {lat['n']} dev questions one at a time: agent p50 {lat['agent_ms']['p50']} ms "
@@ -364,14 +370,28 @@ def agent_section():
     return out + [""] if out else []
 
 
+BENCHES = [  # (title, bench run, AWQ dev predictions, bf16 dev predictions it pairs with)
+    ("1.5B on the RTX 4070 Laptop", "bench_qwen1.5b", "runs/qwen1.5b_lora_r16_awq/eval/dev_base.scored.jsonl",
+     SFT_15.format(split="dev"), "bf16 (LoRA adapter, laptop)"),
+    ("7B DoRA, 4 bit on the RTX 4070 Laptop (bf16 7B does not fit 8 GB)", "bench_qwen7b",
+     "runs/qwen7b_dora_awq/eval/dev_base.scored.jsonl", "runs/qwen7b_dora_best/eval/dev_checkpoint-560.scored.jsonl",
+     "bf16 (merged, A100, v1)"),
+]
+
+
 def bench_section():
-    b = _j(RUNS_DIR / "bench_qwen1.5b" / "results.json")
-    acc = _vs(_scored("runs/qwen1.5b_lora_r16_awq/eval/dev_base.scored.jsonl"), _scored(SFT_15.format(split="dev")))
+    out = []
+    for title, run, awq, bf16, bf16_label in BENCHES:
+        out += _bench(title, _j(RUNS_DIR / run / "results.json"), _vs(_scored(awq), _scored(bf16)), bf16_label)
+    return out
+
+
+def _bench(title, b, acc, bf16_label):
     if not b and not acc:
         return []
-    out = ["### Serving: bf16 against 4 bit AWQ, 1.5B on the RTX 4070 Laptop (v2 part 4)\n"]
+    out = [f"### Serving: bf16 against 4 bit AWQ, {title} (v2 part 4)\n"]
     if acc:
-        out.append(f"Dev EX: AWQ {acc[0]} against bf16 {acc[1]} (only AWQ right {acc[2]}, only bf16 right {acc[3]}, "
+        out.append(f"Dev EX: AWQ {acc[0]} against {bf16_label} {acc[1]} (only AWQ right {acc[2]}, only bf16 right {acc[3]}, "
                    f"exact sign test {_p(acc[4])}, {acc[5]} questions).\n")
     if b:
         out += [f"Locust, {b['seconds_per_level']} s per level, dev prompts, greedy, 256 max new tokens. Cost per 1,000 "

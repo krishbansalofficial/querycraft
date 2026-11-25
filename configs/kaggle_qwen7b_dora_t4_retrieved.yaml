@@ -1,0 +1,15 @@
+eval:
+  dtype: float16
+  forgetting: false
+  gpu_memory_utilization: 0.85
+  splits:
+  - dev
+  - heldback
+  tensor_parallel_size: 2
+  tokenizer: Qwen/Qwen2.5-Coder-7B-Instruct
+inherit: /kaggle/tmp/qc/configs/rented/01_qwen7b_zeroshot.yaml
+model: /kaggle/tmp/runs/qwen7b_dora_best/merged/checkpoint-560
+name: qwen7b_dora_t4_retrieved
+prompt:
+  link_from: runs/table_retriever/eval/{split}_tables.jsonl
+  linking: retriever

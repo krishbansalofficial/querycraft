@@ -15,3 +15,4 @@ data/warehouse/*.sqlite
 mlflow/
 runs/live/
 !data/gate/schemas/**/*.schema3.json
+downloads/

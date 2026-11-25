@@ -158,10 +158,18 @@ The agent retrieves tables, writes SQL, runs it, and on an error or an empty res
 
 1.5B SFT LoRA, 50 dev questions one at a time: agent p50 789.0 ms (p90 3710.9), single pass p50 650.9 ms (p90 987.1).
 
+| 7B SFT DoRA (T4, fp16) | dev | 53.85 | 51.63 | <0.001 | 51.96 | <0.001 | 3.38 | 1585.3 | 0.1375 |
+| 7B SFT DoRA (T4, fp16) | heldback | 86.0 | 83.0 | 0.549 | 84.0 | 0.5 | 3.15 | 1342.7 | 0.06 |
+
+The 7B single pass in fp16 on 2x T4 scores 51.63 on dev against 51.69 for the same model in bf16 on the A100 (v1): 9 of 1534 questions differ (p = 1.0).
+
+
+7B SFT DoRA (T4, fp16), 20 dev questions one at a time: agent p50 2224.9 ms (p90 4104.3), single pass p50 1910.9 ms (p90 3588.9).
+
 
 ### Serving: bf16 against 4 bit AWQ, 1.5B on the RTX 4070 Laptop (v2 part 4)
 
-Dev EX: AWQ 39.7 against bf16 43.94 (only AWQ right 51, only bf16 right 116, exact sign test p < 0.001, 1534 questions).
+Dev EX: AWQ 39.7 against bf16 (LoRA adapter, laptop) 43.94 (only AWQ right 51, only bf16 right 116, exact sign test p < 0.001, 1534 questions).
 
 Locust, 60 s per level, dev prompts, greedy, 256 max new tokens. Cost per 1,000 queries assumes this throughput at public on demand prices (L4 $0.8/h, A100_80GB $2.5/h).
 
