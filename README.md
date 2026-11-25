@@ -49,7 +49,11 @@ Backed by the paired tests and intervals in [Results](#results) (v2 tables follo
    against 790 ms for the same weights merged in bf16 and 960 ms for base + LoRA adapter, and serves 34.7 requests per
    second at 32 users against 25.7 and 21.2. But dev EX falls from 43.94 to 39.7 (51 newly right, 116 newly wrong,
    p < 0.001), calibrated on 64 val prompts. At the measured throughput and an L4's $0.80/h, 1,000 queries cost $0.0064
-   (AWQ), $0.0087 (bf16 merged), $0.0105 (bf16 + adapter).
+   (AWQ), $0.0087 (bf16 merged), $0.0105 (bf16 + adapter). At 7B, 4 bit costs nothing measurable: the 7B DoRA model
+   quantized on Kaggle (calibrated on 32 val prompts) scores 51.5 on dev against 51.69 in bf16 on the A100 (46 newly
+   right, 49 newly wrong, p = 0.84), and it is the only way 7B serves on the 8 GB laptop: p50 1.2 s at 1 user, 10.75
+   requests per second at 32. It runs without CUDA graphs and with a smaller batch to leave room for the KV cache, so
+   its latency is not comparable to the 1.5B rows.
 5. **On a real warehouse the numbers are too small to separate systems.** Over 2,000,000 Iowa Liquor Sales invoice
    lines, the agent answers 15 of 30 new questions (50.0%, 95% interval 33 to 67) against 46.7% for a single pass
    (p = 1.0). The questions still need human review.
@@ -348,6 +352,18 @@ Locust, 60 s per level, dev prompts, greedy, 256 max new tokens. Cost per 1,000 
 | awq_w4a16 | 8 | 19.55 | 1023.7 | 380.0 | 1000.0 | 7397 | 1.12 | 184592 | 0.0114 |
 | awq_w4a16 | 32 | 34.667 | 1843.1 | 850.0 | 2200.0 | 7397 | 1.12 | 184592 | 0.0064 |
 
+### Serving: bf16 against 4 bit AWQ, 7B DoRA, 4 bit on the RTX 4070 Laptop (bf16 7B does not fit 8 GB) (v2 part 4)
+
+Dev EX: AWQ 51.5 against bf16 (merged, A100, v1) 51.69 (only AWQ right 46, only bf16 right 49, exact sign test p = 0.838, 1534 questions).
+
+Locust, 60 s per level, dev prompts, greedy, 256 max new tokens. Cost per 1,000 queries assumes this throughput at public on demand prices (L4 $0.8/h, A100_80GB $2.5/h).
+
+| Variant | Concurrency | Requests/s | Completion tokens/s | p50 ms | p99 ms | Peak GPU MiB | Model GiB | KV cache tokens | $ per 1k queries (L4) |
+|---|---|---|---|---|---|---|---|---|---|
+| awq_w4a16_7b | 1 | 0.783 | 50.6 | 1200.0 | 4200.0 | 7931 | 5.29 | 13552 | 0.2838 |
+| awq_w4a16_7b | 8 | 6.183 | 325.8 | 1200.0 | 2900.0 | 7931 | 5.29 | 13552 | 0.0359 |
+| awq_w4a16_7b | 32 | 10.75 | 511.6 | 2700.0 | 6700.0 | 7931 | 5.29 | 13552 | 0.0207 |
+
 ### Live demo warehouse: Iowa Liquor Sales (v2 part 6)
 
 30 questions written for this project with gold SQL validated by execution (`data/warehouse/iowa_questions.json`, **needs human review**), over 2,000,000 invoice lines (2022-01-02 to 2022-10-19). A second held back set: scored only. 95% Wilson interval; p is an exact sign test against the single pass row.
@@ -458,7 +474,7 @@ those splits. Decisions made along the way and why: `docs/plans/v2.md`. Compute:
 | data, tests, 1.5B baselines, 1.5B QLoRA and LoRA, GRPO, smoke test | Lenovo Legion Pro 5, RTX 4070 Laptop 8 GB, WSL2 Ubuntu 24.04, driver 560.94 |
 | 7B baselines, 7B rank sweep, 7B DoRA, 1.5B full fine tune | 1x A100 SXM4 80GB on Modal, free monthly credit |
 | v2: retriever, abstain model, 1.5B agent, AWQ and serving benchmark, gate, warehouse | the same laptop |
-| v2: 7B single pass and agent on T4 fp16, 7B AWQ (notebooks A to C) | Kaggle 2x T4 16 GB, free weekly quota (TBD until run) |
+| v2: 7B single pass and agent on T4 fp16, 7B AWQ (notebooks A to C) | Kaggle 2x T4 16 GB, free weekly quota (about 6 GPU hours) |
 
 The exact GPU, package versions, git commit, seed, config and wall clock of every stage are written to
 `runs/<name>/<stage>_meta.json`. Every A100 job's measured hours and cost are in `docs/modal_ledger.json`:
@@ -539,8 +555,9 @@ data/gate     the CI gate's 200 question val slice and cached completions;  data
   questions answered transfers to dev far better and is what the table reports.
 * **7B on the 8 GB laptop.** 7B QLoRA training fits only by spilling about 1 GB into system memory, at 67 seconds
   per step (about 10 hours per run), and vLLM 0.32 no longer serves the bitsandbytes 4 bit format, so 7B could not
-  be evaluated locally. All 7B runs moved to Modal's free monthly credit behind a spend cap
-  (`querycraft/budget.py`) that only starts a job if its worst case cost still fits.
+  be evaluated locally in v1. All 7B runs moved to Modal's free monthly credit behind a spend cap
+  (`querycraft/budget.py`) that only starts a job if its worst case cost still fits. In v2 the 7B model serves
+  locally after AWQ quantization on Kaggle (finding 4).
 * **BIRD archive layout.** The train archive ships macOS `__MACOSX` resource fork files that mirror every database
   path. A naive path search picked them first, so validation pointed at non databases. The loader now skips them.
 

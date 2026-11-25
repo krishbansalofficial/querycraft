@@ -2,6 +2,7 @@
 inherit: bench.yaml
 name: bench_qwen7b
 tokenizer: Qwen/Qwen2.5-Coder-7B-Instruct
-gpu_memory_utilization: 0.92
+gpu_memory_utilization: 0.84   # 6.89 of 8 GiB free next to the Windows desktop
 variants:
-  - {name: awq_w4a16_7b, model: runs/qwen7b_dora_best/awq}
+  # eager (no CUDA graphs) and a smaller batch so the KV cache fits; the 1.5B variants ran with CUDA graphs
+  - {name: awq_w4a16_7b, model: runs/qwen7b_dora_best/awq, args: [--enforce-eager, --max-num-batched-tokens, '4096', --max-num-seqs, '32']}

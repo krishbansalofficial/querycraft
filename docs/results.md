@@ -185,6 +185,18 @@ Locust, 60 s per level, dev prompts, greedy, 256 max new tokens. Cost per 1,000 
 | awq_w4a16 | 8 | 19.55 | 1023.7 | 380.0 | 1000.0 | 7397 | 1.12 | 184592 | 0.0114 |
 | awq_w4a16 | 32 | 34.667 | 1843.1 | 850.0 | 2200.0 | 7397 | 1.12 | 184592 | 0.0064 |
 
+### Serving: bf16 against 4 bit AWQ, 7B DoRA, 4 bit on the RTX 4070 Laptop (bf16 7B does not fit 8 GB) (v2 part 4)
+
+Dev EX: AWQ 51.5 against bf16 (merged, A100, v1) 51.69 (only AWQ right 46, only bf16 right 49, exact sign test p = 0.838, 1534 questions).
+
+Locust, 60 s per level, dev prompts, greedy, 256 max new tokens. Cost per 1,000 queries assumes this throughput at public on demand prices (L4 $0.8/h, A100_80GB $2.5/h).
+
+| Variant | Concurrency | Requests/s | Completion tokens/s | p50 ms | p99 ms | Peak GPU MiB | Model GiB | KV cache tokens | $ per 1k queries (L4) |
+|---|---|---|---|---|---|---|---|---|---|
+| awq_w4a16_7b | 1 | 0.783 | 50.6 | 1200.0 | 4200.0 | 7931 | 5.29 | 13552 | 0.2838 |
+| awq_w4a16_7b | 8 | 6.183 | 325.8 | 1200.0 | 2900.0 | 7931 | 5.29 | 13552 | 0.0359 |
+| awq_w4a16_7b | 32 | 10.75 | 511.6 | 2700.0 | 6700.0 | 7931 | 5.29 | 13552 | 0.0207 |
+
 ### Live demo warehouse: Iowa Liquor Sales (v2 part 6)
 
 30 questions written for this project with gold SQL validated by execution (`data/warehouse/iowa_questions.json`, **needs human review**), over 2,000,000 invoice lines (2022-01-02 to 2022-10-19). A second held back set: scored only. 95% Wilson interval; p is an exact sign test against the single pass row.

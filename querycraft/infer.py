@@ -48,7 +48,8 @@ class Generator:
                        tensor_parallel_size=e.get("tensor_parallel_size", 1), seed=cfg["seed"],
                        max_model_len=e["max_model_len"], gpu_memory_utilization=e["gpu_memory_utilization"],
                        enable_lora=e.get("enable_lora", True), max_lora_rank=64, max_loras=1,
-                       enforce_eager=e.get("enforce_eager", False))
+                       enforce_eager=e.get("enforce_eager", False),
+                       max_num_batched_tokens=e.get("max_num_batched_tokens"), max_num_seqs=e.get("max_num_seqs"))
         self.tok = self.llm.get_tokenizer()
         self._lora_ids = {}
 

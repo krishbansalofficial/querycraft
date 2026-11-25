@@ -9,5 +9,9 @@ eval:
   dtype: auto
   tokenizer: Qwen/Qwen2.5-Coder-7B-Instruct
   splits: [dev, heldback]
-  gpu_memory_utilization: 0.92
+  gpu_memory_utilization: 0.84  # 6.89 of 8 GiB free next to the Windows desktop
   max_model_len: 3072
+  enable_lora: false   # merged model, no adapter; the LoRA buffers left no room for the KV cache
+  enforce_eager: true  # CUDA graphs cost the rest (KV cache was -1.14 GiB with both on)
+  max_num_batched_tokens: 3072  # smaller activation peak during vLLM's memory profiling
+  max_num_seqs: 16

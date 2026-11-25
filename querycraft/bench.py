@@ -97,6 +97,7 @@ def bench_variant(cfg, v, prompts, out):
     if v.get("adapter"):
         cmd = cmd[:-2] + ["--served-model-name", "base", "--enable-lora", "--max-lora-rank", "64",
                           "--lora-modules", f"{v['name']}={v['adapter']}"]
+    cmd += v.get("args", [])   # extra vllm serve flags, e.g. the memory limits the 7B needs on 8 GB
     peak = GpuPeak()
     peak.start()
     proc = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT, env=env)
